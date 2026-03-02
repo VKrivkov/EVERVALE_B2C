@@ -13,11 +13,11 @@ const footerColumns = [
   {
     title: "B2B",
     links: [
-      { label: "Hero", href: "https://everlave-b2b.netlify.app/" },
-      { label: "About Us", href: "https://everlave-b2b.netlify.app/" },
-      { label: "Why We", href: "https://everlave-b2b.netlify.app/" },
-      { label: "Our Suppliers", href: "https://everlave-b2b.netlify.app/" },
-      { label: "Contact Us", href: "https://everlave-b2b.netlify.app/" },
+      { label: "Home", href: "https://b2b.evervale.org/" },
+      { label: "About Us", href: "https://b2b.evervale.org/#about" },
+      { label: "Why Us", href: "https://b2b.evervale.org/#why" },
+      { label: "Our Supplier", href: "https://b2b.evervale.org/#supplier" },
+      { label: "Contact Us", href: "https://b2b.evervale.org/#contact" },
     ],
   },
   {
