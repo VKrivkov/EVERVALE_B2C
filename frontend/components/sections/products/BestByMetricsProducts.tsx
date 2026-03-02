@@ -136,25 +136,6 @@ const METRICS: MetricDefinition[] = [
       return getMetricScore(values, "max");
     },
   },
-  {
-    key: "height",
-    badgeLabel: "Tallest Plant",
-    rankMode: "max",
-    requestDirection: "desc",
-    getScore: (item) => {
-      const values = [
-        { value: item.content?.facts?.height, mode: "max" as const },
-        { value: item.content?.facts?.plantHeight, mode: "max" as const },
-        ...collectFilterValues(item, ["height", "plant height", "(cm)"]).map(
-          (value) => ({
-            value,
-            mode: "max" as const,
-          }),
-        ),
-      ];
-      return getMetricScore(values, "max");
-    },
-  },
 ];
 
 function compareByMetric(
@@ -203,7 +184,9 @@ function pickProductFromBestMetricBucket(
       entry,
     ): entry is typeof entry & {
       metricValue: number;
-    } => typeof entry.metricValue === "number" && Number.isFinite(entry.metricValue),
+    } =>
+      typeof entry.metricValue === "number" &&
+      Number.isFinite(entry.metricValue),
   );
 
   if (numericItems.length === 0) {
@@ -219,7 +202,9 @@ function pickProductFromBestMetricBucket(
   return sorted[0]?.product ?? bucket.items[0]?.product;
 }
 
-function buildFallbackProductCards(items: ProductListItem[]): ProductCardItem[] {
+function buildFallbackProductCards(
+  items: ProductListItem[],
+): ProductCardItem[] {
   const candidates = items.filter(
     (item): item is ProductListItem & { slug: string } => Boolean(item.slug),
   );
@@ -302,7 +287,8 @@ export default async function BestByMetricsProducts() {
             Top Picks by Performance
           </h2>
           <p className="mt-2 text-sm text-pr_w/70 sm:text-base">
-            One standout cultivar for each key performance metric
+            Handpicked for peak THC, maximum yield, or fastest finish — our top
+            performers at a glance.
           </p>
         </div>
         <Link href="/products">
