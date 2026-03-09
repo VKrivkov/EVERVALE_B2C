@@ -20,6 +20,7 @@ function normalizeEscapedText(text?: string) {
   return text
     .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
+    .replace(/\s*\/n\s*/g, "\n")
     .replace(/\\t/g, " ")
     .replace(/\\_/g, "_")
     .replace(/\\\*/g, "*")
@@ -46,7 +47,7 @@ function splitIntoParagraphs(text?: string) {
   const normalized = normalizeEscapedText(text);
   if (!normalized) return [];
   return normalized
-    .split(/\n{2,}/)
+    .split(/\n+/)
     .map((part) => part.trim())
     .filter(Boolean);
 }

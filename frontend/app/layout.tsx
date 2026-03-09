@@ -15,8 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Evervale B2C | Wholesale Cannabis Seeds",
-  description: "Evervale B2C wholesale cannabis seeds.",
+  title: "Evervale B2C | Professional Cannabis Genetics",
+  description:
+    "Professional F1 autoflower seeds for licensed businesses. GACP certification. Delivery throughout Europe.",
+  icons: {
+    icon: "/tab_logo.svg",
+    shortcut: "/tab_logo.svg",
+    apple: "/tab_logo.svg",
+  },
 };
 
 export default function RootLayout({

@@ -57,7 +57,7 @@ export default function WhyChooseUs() {
           <article
             key={reason.title}
             data-no-reveal="true"
-            className="relative min-h-[260px] overflow-hidden rounded-tr-[32px] rounded-bl-[32px] border border-pr_w/20 bg-pr_w p-8 text-pr_dg transform-gpu transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 sm:p-9"
+            className="relative min-h-[260px] overflow-hidden rounded-tr-[32px] rounded-bl-[32px] border border-pr_w/20 bg-pr_w p-8 text-pr_dg transform-gpu transition-transform duration-500 ease-[cubic-bezier(0.25,0.9,0.35,1)] hover:-translate-y-1 sm:p-9"
           >
             <Image
               src={reason.backgroundIcon}

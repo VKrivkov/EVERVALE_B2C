@@ -7,7 +7,6 @@ const footerColumns = [
     links: [
       { label: "Home", href: "/" },
       { label: "Seeds", href: "/seeds" },
-      { label: "Product Catalog", href: "/products" },
       { label: "My Account", href: "/user_profile/profile" },
     ],
   },
@@ -15,7 +14,6 @@ const footerColumns = [
     title: "COMPANY",
     links: [
       { label: "About Us", href: "https://b2b.evervale.org/#about" },
-      { label: "Blog", href: "/blog" },
       { label: "Why Us", href: "https://b2b.evervale.org/#why" },
       { label: "Contact Us", href: "https://b2b.evervale.org/#contact" },
     ],
@@ -23,19 +21,18 @@ const footerColumns = [
   {
     title: "SUPPORT",
     links: [
-      { label: "Help", href: "/blog" },
-      { label: "FAQ", href: "/blog" },
-      { label: "Shipping & Returns", href: "/blog" },
-      { label: "Community", href: "/blog" },
+      { label: "Help/FAQ", href: "/" },
+      { label: "Shipping & Returns", href: "/" },
+      { label: "Community", href: "/" },
     ],
   },
   {
     title: "LEGAL",
     links: [
       { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms & Conditions", href: "/privacy-policy" },
-      { label: "Disclaimer", href: "/privacy-policy" },
-      { label: "GDPR Compliance", href: "/privacy-policy" },
+      { label: "Terms & Conditions", href: "/terms-and-conditions" },
+      { label: "Return & Refund Policy", href: "/return-refund-policy" },
+      { label: "Disclaimer", href: "/disclaimer" },
     ],
   },
 ];
@@ -49,7 +46,7 @@ export default function Footer() {
             <Logo />
             <div className="text-pr_w/80">
               <p>+352 662 345 456</p>
-              <p>contact@evervale.com</p>
+              <p>contact@evervale.org</p>
             </div>
           </div>
 
@@ -70,7 +67,8 @@ export default function Footer() {
         <div className="mt-12 flex flex-col items-center gap-1 text-center text-sm text-pr_w/60">
           <p>©2026 EVERVALE. All rights reserved.</p>
           <p>
-            Sold strictly as collectible or souvenir seeds. Not intended for illegal use where prohibited by law.
+            Sold strictly as collectible or souvenir seeds. Not intended for
+            illegal use where prohibited by law.
           </p>
         </div>
       </div>
