@@ -38,9 +38,9 @@ export default function ProductGallery({ title, images = [] }: ProductGalleryPro
       ) : (
         <div className="h-[320px] w-full rounded-2xl bg-pr_w sm:h-[420px]" />
       )}
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 flex flex-wrap gap-4">
         {urls.length > 1 ? (
-          urls.slice(1, 4).map((url, idx) => (
+          urls.slice(1).map((url, idx) => (
             <button
               key={`${url}-${idx}`}
               type="button"
