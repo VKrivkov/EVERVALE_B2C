@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import FilterDropdown from "@/components/seeds/FilterDropdown";
 import ProductCard from "@/components/ui/ProductCard";
@@ -34,6 +34,7 @@ const filterOptions = {
 };
 
 const FIXED_CATEGORY_SLUG = "cannabis-seeds";
+const SEEDS_FILTERS_STORAGE_KEY = "seeds-page-filters:v1";
 
 const GENETICS_RATIO_OPTIONS: Array<{
   label: string;
@@ -99,24 +100,102 @@ function toRange(value?: string | number) {
 function getFilterRange(item: SeedCardItem, slug: string) {
   const facts = item.facts;
   const balance = item.geneticBalance ?? {};
+  const normalizedSlug = slug.toLowerCase();
+  const isThc = normalizedSlug === "thc" || normalizedSlug.includes("thc");
+  const isYield =
+    normalizedSlug === "yield" || normalizedSlug.includes("yield");
+  const isCycle =
+    normalizedSlug === "cycle" ||
+    normalizedSlug.includes("harvest") ||
+    normalizedSlug.includes("flowering");
+  const isHeight =
+    normalizedSlug === "height" || normalizedSlug.includes("height");
+  const isIndica =
+    normalizedSlug === "indica" || normalizedSlug.includes("indica");
+  const isSativa =
+    normalizedSlug === "sativa" || normalizedSlug.includes("sativa");
 
-  if (slug === "thc") return toRange(facts?.thcLevel);
-  if (slug === "yield") return toRange(facts?.yield);
-  if (slug === "cycle") return toRange(facts?.floweringCycle);
-  if (slug === "height") return toRange(facts?.height ?? facts?.plantHeight);
-  if (slug === "indica")
-    return toRange(
+  if (isThc) {
+    const range = toRange(facts?.thcLevel);
+    if (range) return range;
+  }
+  if (isYield) {
+    const range = toRange(facts?.yield);
+    if (range) return range;
+  }
+  if (isCycle) {
+    const range = toRange(facts?.floweringCycle);
+    if (range) return range;
+  }
+  if (isHeight) {
+    const range = toRange(facts?.height ?? facts?.plantHeight);
+    if (range) return range;
+  }
+  if (isIndica) {
+    const range = toRange(
       balance.indica ?? balance["ba"] ?? balance["indica"] ?? balance["Indica"],
     );
-  if (slug === "sativa")
-    return toRange(
+    if (range) return range;
+  }
+  if (isSativa) {
+    const range = toRange(
       balance.sativa ?? balance["abo"] ?? balance["sativa"] ?? balance["Sativa"],
     );
+    if (range) return range;
+  }
 
   const fallback =
     facts?.[slug] ??
     (typeof balance[slug] === "number" ? balance[slug] : undefined);
-  return toRange(fallback);
+  const fallbackRange = toRange(fallback);
+  if (fallbackRange) return fallbackRange;
+
+  const keyMatchers = isThc
+    ? ["thc"]
+    : isYield
+      ? ["yield"]
+      : isCycle
+        ? ["harvest", "flowering", "cycle", "weeks"]
+        : isHeight
+          ? ["height", "cm"]
+          : isIndica
+            ? ["indica", "ba"]
+            : isSativa
+              ? ["sativa", "abo"]
+              : [normalizedSlug];
+
+  const values = Object.entries(item.filters ?? {})
+    .filter(([key]) => {
+      const normalizedKey = slugifyFilterKey(key);
+      return keyMatchers.some(
+        (matcher) =>
+          normalizedKey === matcher ||
+          normalizedKey.includes(matcher) ||
+          matcher.includes(normalizedKey),
+      );
+    })
+    .map(([, value]) => value);
+
+  if (values.length === 0) return undefined;
+  return toRange(values.join(" "));
+}
+
+function getFilterTextValues(item: SeedCardItem, slug: string) {
+  const values: string[] = [];
+  const normalizedSlug = slug.toLowerCase();
+
+  Object.entries(item.filters ?? {}).forEach(([key, rawValue]) => {
+    if (slugifyFilterKey(key) !== normalizedSlug) return;
+    const value = rawValue?.toString().trim();
+    if (!value) return;
+    value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .forEach((entry) => values.push(entry.toLowerCase()));
+  });
+
+  return values;
 }
 
 const selectorOptionsBySlug: Record<
@@ -124,9 +203,9 @@ const selectorOptionsBySlug: Record<
   Array<{ label: string; min?: number; max?: number }>
 > = {
   thc: [
-    { label: "High (up to 25%)", min: 23, max: 25 },
-    { label: "Middle (up to 23%)", min: 22, max: 23 },
-    { label: "Low (up to 22%)", min: 0, max: 22 },
+    { label: "High (25%+)", min: 25 },
+    { label: "Middle (20-24%)", min: 20, max: 24 },
+    { label: "Low (<=22%)", max: 22 },
   ],
   yield: [
     { label: "Up to 600 g", min: 0, max: 600 },
@@ -153,6 +232,7 @@ const selectorOptionsBySlug: Record<
 };
 
 export default function SeedsPage() {
+  const hasLoadedPersistedFilters = useRef(false);
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [sorting, setSorting] = useState("featured");
   const [minPrice, setMinPrice] = useState("");
@@ -181,6 +261,81 @@ export default function SeedsPage() {
   const pageTitle = "All Products";
   const breadcrumbLabel = "Cannabis";
   const backendSort = sorting || "featured";
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(SEEDS_FILTERS_STORAGE_KEY);
+      if (!raw) {
+        hasLoadedPersistedFilters.current = true;
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        sorting?: unknown;
+        minPrice?: unknown;
+        maxPrice?: unknown;
+        search?: unknown;
+        filterValues?: unknown;
+        filterSelections?: unknown;
+        multiSelections?: unknown;
+        geneticsRatio?: unknown;
+      };
+
+      if (typeof parsed.sorting === "string") setSorting(parsed.sorting);
+      if (typeof parsed.minPrice === "string") setMinPrice(parsed.minPrice);
+      if (typeof parsed.maxPrice === "string") setMaxPrice(parsed.maxPrice);
+      if (typeof parsed.search === "string") {
+        setSearch(parsed.search);
+        setSearchQuery(parsed.search.trim());
+      }
+      if (parsed.filterValues && typeof parsed.filterValues === "object") {
+        setFilterValues(parsed.filterValues as Record<string, { min?: string; max?: string }>);
+      }
+      if (
+        parsed.filterSelections &&
+        typeof parsed.filterSelections === "object"
+      ) {
+        setFilterSelections(parsed.filterSelections as Record<string, string>);
+      }
+      if (parsed.multiSelections && typeof parsed.multiSelections === "object") {
+        setMultiSelections(parsed.multiSelections as Record<string, string[]>);
+      }
+      if (typeof parsed.geneticsRatio === "string") {
+        setGeneticsRatio(parsed.geneticsRatio);
+      }
+    } catch {
+      // ignore corrupted state and keep defaults
+    } finally {
+      hasLoadedPersistedFilters.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedPersistedFilters.current) return;
+    const payload = {
+      sorting,
+      minPrice,
+      maxPrice,
+      search,
+      filterValues,
+      filterSelections,
+      multiSelections,
+      geneticsRatio,
+    };
+    window.sessionStorage.setItem(
+      SEEDS_FILTERS_STORAGE_KEY,
+      JSON.stringify(payload),
+    );
+  }, [
+    sorting,
+    minPrice,
+    maxPrice,
+    search,
+    filterValues,
+    filterSelections,
+    multiSelections,
+    geneticsRatio,
+  ]);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -417,7 +572,74 @@ export default function SeedsPage() {
     multiSelections,
   ]);
 
-  const filteredItems = items;
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      for (const filter of categoryFilters) {
+        const slug = filter.slug;
+        const selectedRange = filterValues[slug];
+        const hasSelectedMin = Boolean(selectedRange?.min);
+        const hasSelectedMax = Boolean(selectedRange?.max);
+
+        if (hasSelectedMin || hasSelectedMax) {
+          const itemRange = getFilterRange(item, slug);
+          if (!itemRange) return false;
+
+          const parsedMin = selectedRange?.min ? Number(selectedRange.min) : undefined;
+          const parsedMax = selectedRange?.max ? Number(selectedRange.max) : undefined;
+          const hasMin =
+            typeof parsedMin === "number" && Number.isFinite(parsedMin);
+          const hasMax =
+            typeof parsedMax === "number" && Number.isFinite(parsedMax);
+
+          if (hasMin && hasMax) {
+            if (itemRange.min < parsedMin || itemRange.max > parsedMax) {
+              return false;
+            }
+            continue;
+          }
+
+          if (hasMin && itemRange.min < parsedMin) {
+            return false;
+          }
+
+          if (hasMax && itemRange.max > parsedMax) {
+            return false;
+          }
+          continue;
+        }
+
+        if (filter.type === "select") {
+          const selected = filterSelections[slug]?.toLowerCase();
+          if (!selected) continue;
+          const values = getFilterTextValues(item, slug);
+          if (!values.includes(selected)) return false;
+          continue;
+        }
+
+        if (filter.type === "multi") {
+          const selected = multiSelections[slug] ?? [];
+          if (selected.length === 0) continue;
+          const selectedSet = new Set(selected.map((value) => value.toLowerCase()));
+          const values = getFilterTextValues(item, slug);
+          if (!values.some((value) => selectedSet.has(value))) return false;
+          continue;
+        }
+
+        if (filter.type === "boolean") {
+          const selected = filterSelections[slug];
+          if (!selected) continue;
+          const normalizedSelected =
+            selected.toLowerCase() === "yes" || selected.toLowerCase() === "true";
+          const values = getFilterTextValues(item, slug);
+          if (values.length === 0) return false;
+          const normalizedValue = values[0] === "yes" || values[0] === "true";
+          if (normalizedValue !== normalizedSelected) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [items, categoryFilters, filterValues, filterSelections, multiSelections]);
 
   const showSkeletons = loading && items.length === 0;
 

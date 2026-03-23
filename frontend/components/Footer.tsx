@@ -49,7 +49,7 @@ export default function Footer() {
             <Logo />
             <div className="text-pr_w/80">
               <p>+352 662 345 456</p>
-              <p>contact@evervale.org</p>
+              <p>info@evervale.org</p>
             </div>
           </div>
 

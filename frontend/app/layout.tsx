@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   description:
     "Professional F1 autoflower seeds for licensed businesses. GACP certification. Delivery throughout Europe.",
   icons: {
-    icon: "/tab_logo.svg",
-    shortcut: "/tab_logo.svg",
-    apple: "/tab_logo.svg",
+    icon: "/tab_logo.svg?v=20260313",
+    shortcut: "/tab_logo.svg?v=20260313",
+    apple: "/tab_logo.svg?v=20260313",
   },
 };
 
