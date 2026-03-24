@@ -115,7 +115,7 @@ export type ProductBestByMetricResponse = Record<
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://vale-express-backend.onrender.com";
+  "https://backend.evervale.org";
 
 function getBaseUrl() {
   return API_BASE_URL;

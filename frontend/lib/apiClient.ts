@@ -9,7 +9,7 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://vale-express-backend.onrender.com";
+  "https://backend.evervale.org";
 
 type AuthTokenPair = {
   accessToken?: string;

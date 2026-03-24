@@ -37,7 +37,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://vale-express-backend.onrender.com";
+  "https://backend.evervale.org";
 const DISABLE_AUTH = process.env.NEXT_PUBLIC_DISABLE_AUTH === "true";
 const SESSION_TIMEOUT_AWAY_MS = 15 * 60 * 1000;
 const SESSION_LAST_SEEN_KEY = "evervale_session_last_seen_at";
