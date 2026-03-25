@@ -47,7 +47,7 @@ export default function Hero({
           Where Nature Meets Precision.
         </h1>
         <p className="display-md_thin max-w-3xl text-pr_w/75 max-[640px]:text-[clamp(1.14rem,5.2vw,1.45rem)] max-[640px]:leading-[1.36]">
-          Professional-grade cannabis genetics for licensed businesses.
+          Professional-grade cannabis genetics for licensed businesses.{" "}
           <br className="hidden sm:block" />
           Certified. Compliant. Consistent.
         </p>
