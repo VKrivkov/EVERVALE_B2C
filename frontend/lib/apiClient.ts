@@ -78,11 +78,10 @@ async function fetchWithFallback(
   for (let index = 0; index < urls.length; index += 1) {
     const url = urls[index];
     try {
-      // Always include credentials so cross-origin cookies (cartToken, etc.) are sent
-      const response = await fetch(url, {
-        ...init,
-        credentials: "include",
-      });
+      // No credentials: "include" — auth is handled via Bearer token in headers.
+      // Same-site cookie (cartToken) works fine in production without it,
+      // and adding it breaks CORS preflight for PATCH/DELETE on cross-origin dev.
+      const response = await fetch(url, init);
 
       if (
         retryOnProxyError &&

@@ -119,7 +119,8 @@ function normalizePack(rawPack: unknown, fallbackCurrency = "EUR") {
   const totalUnitsRaw = Math.trunc(asNumber(pack.totalUnits, 0));
   const totalUnits = totalUnitsRaw > 0 ? totalUnitsRaw : paidQty + bonusQty;
   const priceCents = Math.max(0, Math.trunc(asNumber(pack.priceCents, 0)));
-  const currency = asString(pack.currency, fallbackCurrency) || fallbackCurrency;
+  const currency =
+    asString(pack.currency, fallbackCurrency) || fallbackCurrency;
 
   if (!id) return null;
 
@@ -154,33 +155,47 @@ function normalizeCart(raw: unknown): CartResponse {
       const productSlug = asString(
         product.slug || product.productSlug || item.productSlug || item.slug,
       ).trim();
-      const productId = asString(product.id || item.productId).trim() || undefined;
+      const productId =
+        asString(product.id || item.productId).trim() || undefined;
       const resolvedSlug = productSlug || productId || "";
       if (!resolvedSlug) return null;
 
-      const itemId = asString(item.id).trim() || getGuestLineId({ slug: resolvedSlug });
+      const itemId =
+        asString(item.id).trim() || getGuestLineId({ slug: resolvedSlug });
       const qty = normalizeQty(asNumber(item.qty || item.quantity, 1));
 
-      const productCurrency = asString(product.currency || item.currency, "EUR");
+      const productCurrency = asString(
+        product.currency || item.currency,
+        "EUR",
+      );
       const unitPriceFallback = asNumber(
         item.unitPriceCents || item.priceCents,
         asNumber(product.priceCents, 0),
       );
       const lineTotal = Math.max(
         0,
-        Math.trunc(asNumber(item.lineTotal || item.lineTotalCents, qty * unitPriceFallback)),
+        Math.trunc(
+          asNumber(
+            item.lineTotal || item.lineTotalCents,
+            qty * unitPriceFallback,
+          ),
+        ),
       );
 
       const images = Array.isArray(product.images)
         ? product.images
             .map((image) => normalizeImage(image))
-            .filter((image): image is { id?: string; url: string } => Boolean(image))
+            .filter((image): image is { id?: string; url: string } =>
+              Boolean(image),
+            )
         : [];
 
       const pack = normalizePack(item.pack, productCurrency);
       const unitsReceived = Math.max(
         0,
-        Math.trunc(asNumber(item.unitsReceived, pack ? qty * pack.totalUnits : qty)),
+        Math.trunc(
+          asNumber(item.unitsReceived, pack ? qty * pack.totalUnits : qty),
+        ),
       );
 
       return {
@@ -189,7 +204,10 @@ function normalizeCart(raw: unknown): CartResponse {
           ...(productId ? { id: productId } : {}),
           slug: resolvedSlug,
           name: asString(product.name || item.productName, "Product"),
-          priceCents: Math.max(0, Math.trunc(asNumber(product.priceCents, unitPriceFallback))),
+          priceCents: Math.max(
+            0,
+            Math.trunc(asNumber(product.priceCents, unitPriceFallback)),
+          ),
           currency: productCurrency,
           stockQty: Math.max(0, Math.trunc(asNumber(product.stockQty, 0))),
           images,
@@ -301,7 +319,9 @@ function updateGuestCartItem(itemId: string, qty: number) {
 }
 
 function removeGuestCartItem(itemId: string) {
-  const lines = readGuestCart().filter((line) => getGuestLineId(line) !== itemId);
+  const lines = readGuestCart().filter(
+    (line) => getGuestLineId(line) !== itemId,
+  );
   writeGuestCart(lines);
 }
 
@@ -457,7 +477,11 @@ export async function fetchCart() {
   return normalized;
 }
 
-export async function addCartItem(productSlug: string, qty = 1, packId?: string) {
+export async function addCartItem(
+  productSlug: string,
+  qty = 1,
+  packId?: string,
+) {
   const normalizedProductSlug = ensureProductSlug(productSlug);
   if (!normalizedProductSlug) {
     throw buildApiError("Product is unavailable", 400);
@@ -499,7 +523,7 @@ export async function updateCartItem(itemId: string, qty: number) {
   const isGuest = !hasAccessToken();
   if (isGuest) {
     updateGuestCartItem(normalizedItemId, normalizedQty);
-    return { success: true };
+    return { success: true }; // ← returns early for guests
   }
 
   const response = await apiFetch(
