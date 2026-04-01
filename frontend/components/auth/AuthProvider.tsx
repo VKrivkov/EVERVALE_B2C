@@ -405,8 +405,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       clearTokens();
       clearSessionLastSeenAt();
-      setAccessTokenState(null);
       router.push("/");
+      // Clear auth state after navigation starts so RequireAuth on the
+      // current protected page doesn't race and redirect to /signin first.
+      setTimeout(() => setAccessTokenState(null), 0);
     }
   }, [router]);
 
