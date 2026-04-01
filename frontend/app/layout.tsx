@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { GoogleTagManager } from "@next/third-parties/google";
+import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -45,6 +45,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleTagManager gtmId="GTM-T3SWJ2DB" />
+        <GoogleAnalytics gaId="G-6KY8PMBBEP" />
         <AuthProvider>
           <ScrollReveal />
           {children}
