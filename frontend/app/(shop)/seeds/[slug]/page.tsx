@@ -235,7 +235,7 @@ export default async function SeedDetailPage({ params }: SeedDetailProps) {
           .slice()
           .sort((a, b) => a.totalUnits - b.totalUnits)
           .map((pack) => ({
-            label: `${pack.name} (${pack.totalUnits} seeds)`,
+            label: pack.bonusQty > 0 ? `${pack.name} (+${pack.bonusQty} gift)` : pack.name,
             price: formatPrice(pack.priceCents, pack.currency || currency),
             qty: 1,
             packId: pack.id,
