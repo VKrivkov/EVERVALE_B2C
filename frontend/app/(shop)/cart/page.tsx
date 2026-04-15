@@ -464,7 +464,9 @@ export default function CartPage() {
                       </select>
                     )}
 
-                    {selectedOption?.supportsFreeDelivery && !selectedOption.passesFreeDeliveryThreshold ? (
+                    {selectedOption?.supportsFreeDelivery &&
+                    selectedOption.freeShippingThresholdCents !== null &&
+                    !selectedOption.passesFreeDeliveryThreshold ? (
                       <p className="mt-2 rounded-xl bg-pr_dg/5 px-3 py-2 text-xs text-pr_dg/70">
                         Add{" "}
                         <span className="font-semibold text-pr_dg">

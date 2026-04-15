@@ -106,7 +106,7 @@ export type DeliveryOption = {
   id: string;
   type: string;
   priceCents: number;
-  freeShippingThresholdCents: number;
+  freeShippingThresholdCents: number | null;
   supportsFreeDelivery: boolean;
   passesFreeDeliveryThreshold: boolean;
   currency: string;
