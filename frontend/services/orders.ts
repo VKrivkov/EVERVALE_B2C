@@ -69,7 +69,7 @@ export async function fetchOrders(params: {
   return (await response.json()) as OrdersResponse;
 }
 
-export async function checkout(address: OrderAddress) {
+export async function checkout(address: OrderAddress, deliveryOptionId?: string) {
   const payload = {
     address: {
       fullName: address.fullName,
@@ -80,6 +80,7 @@ export async function checkout(address: OrderAddress) {
       ...(address.line2 ? { line2: address.line2 } : {}),
       ...(address.phone ? { phone: address.phone } : {}),
     },
+    ...(deliveryOptionId ? { deliveryOptionId } : {}),
   };
 
   const response = await apiFetch("/checkout", {

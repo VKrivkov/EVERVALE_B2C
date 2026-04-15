@@ -86,7 +86,7 @@ export default function Footer() {
                       alt={social.label}
                       width={20}
                       height={20}
-                      className="h-6 w-6 filter brightness-0 invert"
+                      className="h-5 w-5 filter brightness-0 invert"
                     />
                   </a>
                 ))}

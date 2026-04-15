@@ -164,15 +164,18 @@ export default function CartPage() {
 
     try {
       setCheckoutLoading(true);
-      const result = await checkout({
-        fullName: address.fullName.trim(),
-        line1: address.line1.trim(),
-        city: address.city.trim(),
-        postalCode: address.postalCode.trim(),
-        country: address.country.trim(),
-        line2: address.line2.trim() || undefined,
-        phone: address.phone.trim() || undefined,
-      });
+      const result = await checkout(
+        {
+          fullName: address.fullName.trim(),
+          line1: address.line1.trim(),
+          city: address.city.trim(),
+          postalCode: address.postalCode.trim(),
+          country: address.country.trim(),
+          line2: address.line2.trim() || undefined,
+          phone: address.phone.trim() || undefined,
+        },
+        selectedDeliveryOptionId || undefined,
+      );
 
       setAddress(initialAddress);
       await loadCart();
@@ -462,13 +465,19 @@ export default function CartPage() {
                     )}
 
                     {selectedOption?.supportsFreeDelivery && !selectedOption.passesFreeDeliveryThreshold ? (
-                      <p className="mt-2 text-xs text-pr_dg/60">
-                        Free shipping from{" "}
-                        {formatPrice(selectedOption.freeShippingThresholdCents, selectedOption.currency)}
+                      <p className="mt-2 rounded-xl bg-pr_dg/5 px-3 py-2 text-xs text-pr_dg/70">
+                        Add{" "}
+                        <span className="font-semibold text-pr_dg">
+                          {formatPrice(
+                            selectedOption.freeShippingThresholdCents - cart.subtotalCents,
+                            selectedOption.currency,
+                          )}
+                        </span>{" "}
+                        more for free shipping
                       </p>
                     ) : selectedOption?.passesFreeDeliveryThreshold ? (
-                      <p className="mt-2 text-xs text-green-600 font-medium">
-                        Free shipping applied!
+                      <p className="mt-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+                        You&apos;ve got free delivery!
                       </p>
                     ) : null}
                   </div>
