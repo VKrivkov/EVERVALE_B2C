@@ -80,7 +80,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [formRating, setFormRating] = useState(5);
   const [formText, setFormText] = useState("");
-  const [formImageFiles, setFormImageFiles] = useState<File[]>([]);
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -178,11 +177,9 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
       await createReview(productId, {
         rating: formRating,
         text: formText.trim() || undefined,
-        imageFiles: formImageFiles.length ? formImageFiles : undefined,
       });
       setFormText("");
       setFormRating(5);
-      setFormImageFiles([]);
       setPage(1);
       const [summaryData, reviewsData] = await Promise.all([
         fetchReviewSummary(productId),
@@ -397,8 +394,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
         onRatingChange={setFormRating}
         text={formText}
         onTextChange={setFormText}
-        imageFiles={formImageFiles}
-        onImageFilesChange={setFormImageFiles}
         onSubmit={handleSubmit}
         loading={formLoading}
         error={formError}

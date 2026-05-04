@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import Modal from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 
@@ -11,8 +10,6 @@ type ReviewFormModalProps = {
   onRatingChange: (value: number) => void;
   text: string;
   onTextChange: (value: string) => void;
-  imageFiles: File[];
-  onImageFilesChange: (files: File[]) => void;
   onSubmit: () => void;
   loading?: boolean;
   error?: string;
@@ -25,26 +22,10 @@ export default function ReviewFormModal({
   onRatingChange,
   text,
   onTextChange,
-  imageFiles,
-  onImageFilesChange,
   onSubmit,
   loading,
   error,
 }: ReviewFormModalProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const newFiles = [...imageFiles, ...Array.from(files)].slice(0, 5);
-    onImageFilesChange(newFiles);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleRemove = (index: number) => {
-    onImageFilesChange(imageFiles.filter((_, idx) => idx !== index));
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
       <div className="space-y-6">
@@ -75,46 +56,6 @@ export default function ReviewFormModal({
             placeholder="What should other customers know?"
             className="min-h-[140px] w-full rounded-2xl border border-pr_dg/30 bg-pr_w px-4 py-3 text-sm text-pr_dg outline-none"
           />
-        </div>
-
-        <div>
-          <p className="text-sm font-semibold">Share a photo</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-3 w-full rounded-2xl border border-dashed border-pr_dg/40 p-4 text-sm text-pr_dg/60 hover:border-pr_dg/60 transition"
-          >
-            Click here to upload your image ({imageFiles.length}/5)
-          </button>
-
-          {imageFiles.length > 0 ? (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {imageFiles.map((file, index) => (
-                <div key={`${file.name}-${index}`} className="relative">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt=""
-                    className="h-20 w-full rounded-xl object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(index)}
-                    className="absolute -right-2 -top-2 rounded-full bg-pr_dg px-2 py-1 text-xs text-pr_w"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
 
         {error ? <p className="text-xs text-pr_dr">{error}</p> : null}
