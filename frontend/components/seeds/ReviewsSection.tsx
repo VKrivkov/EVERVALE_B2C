@@ -4,9 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import RatingBar from "@/components/seeds/RatingBar";
 import ReviewCard from "@/components/seeds/ReviewCard";
-import ReviewDetailModal, {
-  ReviewDetail,
-} from "@/components/seeds/ReviewDetailModal";
 import ReviewFormModal from "@/components/seeds/ReviewFormModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -83,10 +80,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
   const [formImageFiles, setFormImageFiles] = useState<File[]>([]);
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewModalData, setReviewModalData] = useState<ReviewDetail | null>(
-    null,
-  );
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
   const pageCount = Math.max(1, Math.ceil(total / 3));
@@ -339,16 +332,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
                   createdAt={review.createdAt}
                   isMine={review.isMine}
                   onDelete={review.id ? () => handleDelete(review.id) : undefined}
-                  onOpen={() => {
-                    setReviewModalData({
-                      name: review.user?.name ?? "Anonymous",
-                      rating: review.rating,
-                      text: review.text ?? "No review text.",
-                      images: review.images?.map((image) => image.resolvedUrl || image.url || "").filter(Boolean) ?? [],
-                      createdAt: review.createdAt,
-                    });
-                    setIsReviewModalOpen(true);
-                  }}
                 />
               ))
             ) : (
@@ -383,12 +366,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
           </div>
         </div>
       )}
-
-      <ReviewDetailModal
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-        review={reviewModalData}
-      />
 
       <ReviewFormModal
         isOpen={isFormModalOpen}
