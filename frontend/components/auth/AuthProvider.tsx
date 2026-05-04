@@ -79,15 +79,20 @@ function isLikelyExpiredAccessToken(token: string) {
   return expiryMs <= Date.now() + ACCESS_TOKEN_EXPIRY_SKEW_MS;
 }
 
-function getJwtRole(token: string): string | null {
+type JwtPayload = {
+  role?: string;
+  name?: string;
+  email?: string;
+  sub?: string;
+};
+
+function decodeJwtPayload(token: string): JwtPayload {
   const payload = token.split(".")[1];
-  if (!payload) return null;
+  if (!payload) return {};
   try {
-    const decoded = decodeBase64Url(payload);
-    const parsed = JSON.parse(decoded) as { role?: string };
-    return typeof parsed.role === "string" ? parsed.role : null;
+    return JSON.parse(decodeBase64Url(payload)) as JwtPayload;
   } catch {
-    return null;
+    return {};
   }
 }
 
@@ -234,6 +239,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (data?.accessToken) {
               setAccessToken(data.accessToken);
               setAccessTokenState(data.accessToken);
+              const jwtPayload = decodeJwtPayload(data.accessToken);
+              if (jwtPayload.name && jwtPayload.email) {
+                setStoredProfileName(jwtPayload.name, jwtPayload.email);
+                setStoredProfileEmail(jwtPayload.email);
+              }
               if (data?.refreshToken) {
                 setRefreshToken(data.refreshToken);
               }
@@ -360,6 +370,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       applyTokens(tokens);
       setStoredProfileEmail(normalizedEmail);
+      // Pull name from JWT payload so each account gets its own name from DB
+      const jwtPayload = decodeJwtPayload(tokens.accessToken!);
+      if (jwtPayload.name) setStoredProfileName(jwtPayload.name, normalizedEmail);
       await syncLegacyGuestCartToApi();
     },
     [applyTokens],
@@ -435,13 +448,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdminState(false);
       return;
     }
-    // Check JWT role first
-    const jwtRole = getJwtRole(accessToken);
-    if (jwtRole === "ADMIN") {
+    const { role } = decodeJwtPayload(accessToken);
+    if (role === "ADMIN") {
       setIsAdminState(true);
       return;
     }
-    // Probe admin API as fallback
+    // Probe admin API as fallback (if role not in JWT)
     apiFetch("/admin/products?limit=1")
       .then((res) => setIsAdminState(res.ok))
       .catch(() => setIsAdminState(false));
