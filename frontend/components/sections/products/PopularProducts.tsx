@@ -29,7 +29,7 @@ export default async function PopularProducts() {
 
   try {
     const items = await fetchAllProducts(undefined, {
-      next: { revalidate: 60 },
+      next: { revalidate: 300 },
     });
 
     products = items

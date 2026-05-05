@@ -86,7 +86,7 @@ export default function AdminProductEditPage() {
 
       if (savedAsExpected) {
         setSuccess(
-          "Saved. Public site is statically built — changes appear after redeploy.",
+          "Saved. Public site cache refreshes every 5 minutes; changes appear automatically within that window.",
         );
       } else {
         setError(

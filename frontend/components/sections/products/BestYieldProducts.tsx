@@ -57,7 +57,7 @@ export default async function BestYieldProducts() {
 
   try {
     const items = await fetchAllProducts(undefined, {
-      next: { revalidate: 60 },
+      next: { revalidate: 300 },
     });
 
     const itemsWithSlug = items.filter(

@@ -115,7 +115,7 @@ function extractGeneticsText(product: ProductDetails, description: string) {
   return undefined;
 }
 
-const PRODUCT_DETAIL_REVALIDATE_SECONDS = 60;
+const PRODUCT_DETAIL_REVALIDATE_SECONDS = 300;
 
 type SeedDetailProps = {
   params: { slug: string } | Promise<{ slug: string }>;

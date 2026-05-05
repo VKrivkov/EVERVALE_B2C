@@ -249,7 +249,7 @@ export default async function BestByMetricsProducts() {
         top: 1,
       },
       {
-        next: { revalidate: 60 },
+        next: { revalidate: 300 },
       },
     );
 
@@ -270,7 +270,7 @@ export default async function BestByMetricsProducts() {
   if (products.length === 0) {
     try {
       const items = await fetchAllProducts(undefined, {
-        next: { revalidate: 60 },
+        next: { revalidate: 300 },
       });
 
       products = buildFallbackProductCards(items);
