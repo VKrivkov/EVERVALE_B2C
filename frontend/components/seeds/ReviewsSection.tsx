@@ -325,7 +325,6 @@ export default function ReviewsSection({ productId }: ReviewsSectionProps) {
                   name={review.user?.name ?? "Anonymous"}
                   rating={review.rating}
                   text={review.text ?? "No review text."}
-                  images={review.images?.map((image) => image.resolvedUrl || image.url || "").filter(Boolean) ?? []}
                   createdAt={review.createdAt}
                   isMine={review.isMine}
                   onDelete={review.id ? () => handleDelete(review.id) : undefined}

@@ -2,7 +2,6 @@ type ReviewCardProps = {
   name: string;
   rating: number;
   text: string;
-  images?: string[];
   createdAt?: string;
   isMine?: boolean;
   onDelete?: () => void;
@@ -13,14 +12,11 @@ export default function ReviewCard({
   name,
   rating,
   text,
-  images = [],
   createdAt,
   isMine,
   onDelete,
   onOpen,
 }: ReviewCardProps) {
-  const visibleImages = images.slice(0, 3);
-
   return (
     <div
       role={onOpen ? "button" : undefined}
@@ -68,18 +64,6 @@ export default function ReviewCard({
         </p>
       ) : null}
       <p className="mt-3 text-xs text-pr_dg/70">{text}</p>
-      {visibleImages.length > 0 ? (
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {visibleImages.map((url, index) => (
-            <img
-              key={`${url}-${index}`}
-              src={url}
-              alt=""
-              className="h-16 w-full rounded-lg object-cover"
-            />
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
