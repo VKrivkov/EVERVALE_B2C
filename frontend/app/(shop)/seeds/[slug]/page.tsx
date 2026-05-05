@@ -211,6 +211,7 @@ export default async function SeedDetailPage({ params }: SeedDetailProps) {
   }
 
   const productSlug = product.slug || slug;
+  const productIdForReviews = product.id || productSlug;
   const title = product.name;
   const subtitle =
     normalizeEscapedText(product.content?.subtitle) || "Premium product subtitle.";
@@ -348,7 +349,7 @@ export default async function SeedDetailPage({ params }: SeedDetailProps) {
               <span>
                 {sold} Sold •{" "}
                 <ReviewSummaryInline
-                  productId={productSlug}
+                  productId={productIdForReviews}
                   fallbackRating={rating}
                 />
               </span>
@@ -445,7 +446,7 @@ export default async function SeedDetailPage({ params }: SeedDetailProps) {
           </div>
         </div>
 
-        <ReviewsSection productId={productSlug} />
+        <ReviewsSection productId={productIdForReviews} />
       </section>
     </div>
   );

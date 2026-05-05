@@ -1,5 +1,36 @@
 import { apiFetch } from "@/lib/apiClient";
 
+type ApiValidationErrorPayload = {
+  message?: string;
+  error?: string | boolean;
+  details?: {
+    fieldErrors?: Record<string, string[]>;
+  };
+};
+
+function buildAdminErrorMessage(
+  payload: ApiValidationErrorPayload,
+  fallback: string,
+) {
+  const base =
+    typeof payload?.message === "string"
+      ? payload.message
+      : typeof payload?.error === "string"
+        ? payload.error
+        : fallback;
+
+  const fieldErrors = payload?.details?.fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== "object") return base;
+
+  const details = Object.entries(fieldErrors)
+    .flatMap(([field, messages]) =>
+      (messages ?? []).map((message) => `${field}: ${message}`),
+    )
+    .join("; ");
+
+  return details ? `${base} (${details})` : base;
+}
+
 export type AdminProduct = {
   id: string;
   name: string;
@@ -69,8 +100,8 @@ export async function fetchAdminProducts(params?: {
 
   const response = await apiFetch(`/admin/products?${search.toString()}`);
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to load products");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to load products"));
   }
   return (await response.json()) as AdminProductsResponse;
 }
@@ -78,8 +109,8 @@ export async function fetchAdminProducts(params?: {
 export async function fetchAdminProduct(productId: string) {
   const response = await apiFetch(`/admin/products/${productId}`);
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Product not found");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Product not found"));
   }
   return (await response.json()) as AdminProduct;
 }
@@ -99,8 +130,8 @@ export async function createAdminProduct(data: {
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to create product");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to create product"));
   }
   return (await response.json()) as AdminProduct;
 }
@@ -112,8 +143,8 @@ export async function updateAdminProduct(productId: string, data: Record<string,
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to update product");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to update product"));
   }
   return (await response.json()) as AdminProduct;
 }
@@ -121,8 +152,8 @@ export async function updateAdminProduct(productId: string, data: Record<string,
 export async function deleteAdminProduct(productId: string) {
   const response = await apiFetch(`/admin/products/${productId}`, { method: "DELETE" });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to delete product");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to delete product"));
   }
   return (await response.json()) as AdminProduct;
 }
@@ -137,8 +168,8 @@ export async function uploadProductImage(productId: string, file: File, sortOrde
     body: formData,
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to upload image");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to upload image"));
   }
   return response.json();
 }
@@ -148,8 +179,8 @@ export async function deleteProductImage(productId: string, imageId: string) {
     method: "DELETE",
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to delete image");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to delete image"));
   }
 }
 
@@ -171,8 +202,8 @@ export async function createProductPacks(
     body: JSON.stringify({ packs }),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to create packs");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to create packs"));
   }
   return response.json();
 }
@@ -188,8 +219,8 @@ export async function updateProductPack(
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.message || err?.error || "Failed to update pack");
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to update pack"));
   }
   return response.json();
 }

@@ -1,11 +1,5 @@
 import { apiFetch } from "@/lib/apiClient";
 
-export type ReviewImage = {
-  url: string | null;
-  s3Key?: string | null;
-  resolvedUrl?: string;
-};
-
 export type ReviewUser = {
   name: string;
 };
@@ -17,7 +11,6 @@ export type ReviewItem = {
   createdAt: string;
   isMine?: boolean;
   user: ReviewUser;
-  images?: ReviewImage[];
 };
 
 export type ReviewsResponse = {
@@ -58,7 +51,22 @@ export async function fetchReviews(
     throw new Error("Failed to load reviews");
   }
 
-  return (await response.json()) as ReviewsResponse;
+  const data = (await response.json()) as ReviewsResponse;
+  return {
+    page: data.page,
+    limit: data.limit,
+    total: data.total,
+    items: Array.isArray(data.items)
+      ? data.items.map((item) => ({
+          id: item.id,
+          rating: item.rating,
+          text: item.text,
+          createdAt: item.createdAt,
+          isMine: item.isMine,
+          user: item.user,
+        }))
+      : [],
+  };
 }
 
 export async function fetchReviewSummary(productId: string) {

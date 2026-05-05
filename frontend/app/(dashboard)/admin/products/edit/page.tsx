@@ -66,10 +66,6 @@ export default function AdminProductEditPage() {
         priceCents: normalizedPriceCents,
         stockQty: normalizedStockQty,
         isActive,
-        content: {
-          description: description.trim(),
-          subtitle: subtitle.trim(),
-        },
       });
       // Re-fetch to verify the backend actually persisted the changes
       const fresh = await fetchAdminProduct(id);
@@ -86,13 +82,16 @@ export default function AdminProductEditPage() {
         fresh.name === name.trim() &&
         fresh.priceCents === normalizedPriceCents &&
         fresh.stockQty === normalizedStockQty &&
-        fresh.isActive === isActive &&
-        (fresh.content?.description ?? "") === description.trim() &&
-        (fresh.content?.subtitle ?? "") === subtitle.trim();
+        fresh.isActive === isActive;
 
       if (savedAsExpected) {
+        const contentChanged =
+          (fresh.content?.description ?? "") !== description.trim() ||
+          (fresh.content?.subtitle ?? "") !== subtitle.trim();
         setSuccess(
-          "Saved. Public site cache refreshes every 5 minutes; changes appear automatically within that window.",
+          contentChanged
+            ? "Saved product fields. Subtitle/description updates are not supported by current PATCH /admin/products API."
+            : "Saved. Public site cache refreshes every 5 minutes; changes appear automatically within that window.",
         );
       } else {
         setError(
