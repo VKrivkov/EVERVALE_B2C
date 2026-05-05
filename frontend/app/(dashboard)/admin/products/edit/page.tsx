@@ -54,20 +54,46 @@ export default function AdminProductEditPage() {
     setError("");
     setSuccess("");
     try {
-      const updated = await updateAdminProduct(id, {
+      await updateAdminProduct(id, {
         name,
         priceCents,
         stockQty,
         isActive,
         content: {
-          ...product?.content,
+          ...(product?.content ?? {}),
           description,
           subtitle,
         },
       });
-      setProduct(updated);
-      setSuccess("Product updated");
-      setTimeout(() => setSuccess(""), 3000);
+      // Re-fetch to verify the backend actually persisted the changes
+      const fresh = await fetchAdminProduct(id);
+      setProduct(fresh);
+      setName(fresh.name);
+      setPriceCents(fresh.priceCents);
+      setStockQty(fresh.stockQty);
+      setIsActive(fresh.isActive);
+      setDescription(fresh.content?.description ?? "");
+      setSubtitle(fresh.content?.subtitle ?? "");
+
+      // Check if the changes were actually saved
+      const savedAsExpected =
+        fresh.name === name &&
+        fresh.priceCents === priceCents &&
+        fresh.stockQty === stockQty &&
+        fresh.isActive === isActive &&
+        (fresh.content?.description ?? "") === description &&
+        (fresh.content?.subtitle ?? "") === subtitle;
+
+      if (savedAsExpected) {
+        setSuccess(
+          "Saved. Public site is statically built — changes appear after redeploy.",
+        );
+      } else {
+        setError(
+          "Backend accepted the request but some fields were not updated. Check API permissions/schema.",
+        );
+      }
+      setTimeout(() => setSuccess(""), 6000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
     } finally {
