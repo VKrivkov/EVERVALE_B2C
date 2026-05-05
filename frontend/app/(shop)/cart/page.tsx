@@ -246,7 +246,7 @@ export default function CartPage() {
                         {item.product.images?.[0]?.url ? (
                           item.product.slug ? (
                             <Link
-                              href={`/seeds/${item.product.slug}`}
+                              href={`/products/${item.product.slug}`}
                               className="block"
                             >
                               <img

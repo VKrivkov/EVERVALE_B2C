@@ -1068,7 +1068,7 @@ export default function SeedsPage() {
                   price={seed.price}
                   isNew={false}
                   productId={seed.productId}
-                  href={`/seeds/${seed.slug}`}
+                  href={`/products/${seed.slug}`}
                   imageUrl={seed.imageUrl}
                   hoverInfo={seed.hoverInfo}
                 />
