@@ -71,7 +71,7 @@ export type AdminProduct = {
     name: string;
     paidQty: number;
     bonusQty: number;
-    totalUnits: number;
+    totalUnits?: number;
     priceCents: number;
     currency: string;
     isActive: boolean;

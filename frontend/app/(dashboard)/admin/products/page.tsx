@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   fetchAdminProducts,
   deleteAdminProduct,
+  updateAdminProduct,
   AdminProduct,
 } from "@/services/admin";
 import { formatPrice } from "@/services/products";
@@ -45,12 +46,16 @@ export default function AdminProductsPage() {
     }, 300);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleToggleActive = async (product: AdminProduct) => {
     try {
-      await deleteAdminProduct(id);
+      if (product.isActive) {
+        await deleteAdminProduct(product.id);
+      } else {
+        await updateAdminProduct(product.id, { isActive: true });
+      }
       load(page, search);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(err instanceof Error ? err.message : "Failed to update product");
     }
   };
 
@@ -141,10 +146,14 @@ export default function AdminProductsPage() {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => handleDelete(product.id)}
-                        className="rounded-full border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                        onClick={() => handleToggleActive(product)}
+                        className={`rounded-full border px-3 py-1 text-xs ${
+                          product.isActive
+                            ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            : "border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        }`}
                       >
-                        Deactivate
+                        {product.isActive ? "Deactivate" : "Activate"}
                       </button>
                     </div>
                   </td>

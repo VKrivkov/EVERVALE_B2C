@@ -7,9 +7,36 @@ import {
   updateAdminProduct,
   uploadProductImage,
   deleteProductImage,
+  createProductPacks,
+  updateProductPack,
   AdminProduct,
 } from "@/services/admin";
 import { formatPrice } from "@/services/products";
+
+type PackDraft = {
+  id: string;
+  name: string;
+  paidQty: number;
+  bonusQty: number;
+  priceCents: number;
+  currency: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+type NewPackDraft = {
+  name: string;
+  paidQty: number;
+  bonusQty: number;
+  priceCents: number;
+};
+
+const emptyNewPack: NewPackDraft = {
+  name: "",
+  paidQty: 1,
+  bonusQty: 0,
+  priceCents: 0,
+};
 
 export default function AdminProductEditPage() {
   const searchParams = useSearchParams();
@@ -30,26 +57,56 @@ export default function AdminProductEditPage() {
   const [isActive, setIsActive] = useState(true);
   const [description, setDescription] = useState("");
   const [subtitle, setSubtitle] = useState("");
+  const [genBalance, setGenBalance] = useState("");
+  const [effectsText, setEffectsText] = useState("");
+
+  const [packs, setPacks] = useState<PackDraft[]>([]);
+  const [packBusyId, setPackBusyId] = useState<string | null>(null);
+  const [newPack, setNewPack] = useState<NewPackDraft>(emptyNewPack);
+  const [creatingPack, setCreatingPack] = useState(false);
+
+  const hydrateFromProduct = (p: AdminProduct) => {
+    setProduct(p);
+    setName(p.name);
+    setPriceCents(p.priceCents);
+    setStockQty(p.stockQty);
+    setIsActive(p.isActive);
+    setDescription(p.content?.description ?? "");
+    setSubtitle(p.content?.subtitle ?? "");
+    setGenBalance(p.content?.gen_balance_desk ?? "");
+    setEffectsText((p.content?.effects ?? []).join(", "));
+    setPacks(
+      (p.packs ?? []).map((pack) => ({
+        id: pack.id,
+        name: pack.name,
+        paidQty: pack.paidQty,
+        bonusQty: pack.bonusQty,
+        priceCents: pack.priceCents,
+        currency: pack.currency,
+        isActive: pack.isActive,
+        sortOrder: pack.sortOrder,
+      })),
+    );
+  };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     fetchAdminProduct(id)
-      .then((p) => {
-        setProduct(p);
-        setName(p.name);
-        setPriceCents(p.priceCents);
-        setStockQty(p.stockQty);
-        setIsActive(p.isActive);
-        setDescription(p.content?.description ?? "");
-        setSubtitle(p.content?.subtitle ?? "");
-      })
+      .then(hydrateFromProduct)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleSave = async () => {
+  const reload = async () => {
     if (!id) return;
+    const fresh = await fetchAdminProduct(id);
+    hydrateFromProduct(fresh);
+    return fresh;
+  };
+
+  const handleSave = async () => {
+    if (!id || !product) return;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -60,24 +117,27 @@ export default function AdminProductEditPage() {
       const normalizedStockQty = Number.isFinite(stockQty)
         ? Math.max(0, Math.trunc(stockQty))
         : 0;
+      const effects = effectsText
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
       await updateAdminProduct(id, {
         name: name.trim(),
         priceCents: normalizedPriceCents,
         stockQty: normalizedStockQty,
         isActive,
+        content: {
+          ...(product.content ?? {}),
+          subtitle: subtitle.trim(),
+          description: description.trim(),
+          gen_balance_desk: genBalance.trim(),
+          effects,
+        },
       });
-      // Re-fetch to verify the backend actually persisted the changes
-      const fresh = await fetchAdminProduct(id);
-      setProduct(fresh);
-      setName(fresh.name);
-      setPriceCents(fresh.priceCents);
-      setStockQty(fresh.stockQty);
-      setIsActive(fresh.isActive);
-      setDescription(fresh.content?.description ?? "");
-      setSubtitle(fresh.content?.subtitle ?? "");
+      const fresh = await reload();
+      if (!fresh) return;
 
-      // Check if the changes were actually saved
       const savedAsExpected =
         fresh.name === name.trim() &&
         fresh.priceCents === normalizedPriceCents &&
@@ -85,17 +145,10 @@ export default function AdminProductEditPage() {
         fresh.isActive === isActive;
 
       if (savedAsExpected) {
-        const contentChanged =
-          (fresh.content?.description ?? "") !== description.trim() ||
-          (fresh.content?.subtitle ?? "") !== subtitle.trim();
-        setSuccess(
-          contentChanged
-            ? "Saved product fields. Subtitle/description updates are not supported by current PATCH /admin/products API."
-            : "Saved. Public site cache refreshes every 5 minutes; changes appear automatically within that window.",
-        );
+        setSuccess("Saved.");
       } else {
         setError(
-          "Backend accepted the request but some fields were not updated. Check API permissions/schema.",
+          "Backend accepted the request but some fields were not updated.",
         );
       }
       setTimeout(() => setSuccess(""), 6000);
@@ -113,8 +166,7 @@ export default function AdminProductEditPage() {
     setError("");
     try {
       await uploadProductImage(id, file, product?.images?.length ?? 0);
-      const updated = await fetchAdminProduct(id);
-      setProduct(updated);
+      await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload");
     } finally {
@@ -127,10 +179,77 @@ export default function AdminProductEditPage() {
     if (!id) return;
     try {
       await deleteProductImage(id, imageId);
-      const updated = await fetchAdminProduct(id);
-      setProduct(updated);
+      await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete image");
+    }
+  };
+
+  const updatePackDraft = (packId: string, patch: Partial<PackDraft>) => {
+    setPacks((prev) =>
+      prev.map((p) => (p.id === packId ? { ...p, ...patch } : p)),
+    );
+  };
+
+  const handleSavePack = async (pack: PackDraft) => {
+    if (!id) return;
+    setPackBusyId(pack.id);
+    setError("");
+    try {
+      await updateProductPack(id, pack.id, {
+        name: pack.name.trim(),
+        paidQty: Math.max(0, Math.trunc(pack.paidQty)),
+        bonusQty: Math.max(0, Math.trunc(pack.bonusQty)),
+        priceCents: Math.max(0, Math.trunc(pack.priceCents)),
+        isActive: pack.isActive,
+        sortOrder: Math.max(0, Math.trunc(pack.sortOrder)),
+      });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save pack");
+    } finally {
+      setPackBusyId(null);
+    }
+  };
+
+  const handleTogglePackActive = async (pack: PackDraft) => {
+    if (!id) return;
+    setPackBusyId(pack.id);
+    setError("");
+    try {
+      await updateProductPack(id, pack.id, { isActive: !pack.isActive });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update pack");
+    } finally {
+      setPackBusyId(null);
+    }
+  };
+
+  const handleCreatePack = async () => {
+    if (!id) return;
+    if (!newPack.name.trim()) {
+      setError("Pack name is required");
+      return;
+    }
+    setCreatingPack(true);
+    setError("");
+    try {
+      await createProductPacks(id, [
+        {
+          name: newPack.name.trim(),
+          paidQty: Math.max(0, Math.trunc(newPack.paidQty)),
+          bonusQty: Math.max(0, Math.trunc(newPack.bonusQty)),
+          priceCents: Math.max(0, Math.trunc(newPack.priceCents)),
+          sortOrder: packs.length,
+        },
+      ]);
+      setNewPack(emptyNewPack);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create pack");
+    } finally {
+      setCreatingPack(false);
     }
   };
 
@@ -148,9 +267,11 @@ export default function AdminProductEditPage() {
 
   const inputClass =
     "w-full rounded-xl border border-pr_w/20 bg-transparent px-4 py-2 text-sm text-pr_w outline-none placeholder:text-pr_w/30";
+  const smallInputClass =
+    "w-full rounded-lg border border-pr_w/20 bg-transparent px-3 py-1.5 text-xs text-pr_w outline-none placeholder:text-pr_w/30";
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       <div className="flex items-center gap-4">
         <button
           type="button"
@@ -213,6 +334,26 @@ export default function AdminProductEditPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               className={`${inputClass} min-h-[100px] rounded-2xl`}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/50">Genetic balance</label>
+            <input
+              type="text"
+              value={genBalance}
+              onChange={(e) => setGenBalance(e.target.value)}
+              placeholder="e.g. 60/40"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/50">Effects (comma-separated)</label>
+            <input
+              type="text"
+              value={effectsText}
+              onChange={(e) => setEffectsText(e.target.value)}
+              placeholder="Relaxed, Happy"
+              className={inputClass}
             />
           </div>
           <div className="flex items-center gap-3">
@@ -281,26 +422,162 @@ export default function AdminProductEditPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {product.packs && product.packs.length > 0 ? (
-            <div>
-              <h2 className="text-sm font-semibold text-pr_w/80">Packs</h2>
-              <div className="mt-3 space-y-2">
-                {product.packs.map((pack) => (
-                  <div
-                    key={pack.id}
-                    className="flex items-center justify-between rounded-xl border border-pr_w/10 px-4 py-2 text-sm"
+      <div className="mt-10">
+        <h2 className="text-sm font-semibold text-pr_w/80">Packs</h2>
+
+        <div className="mt-3 space-y-3">
+          {packs.length === 0 ? (
+            <p className="text-xs text-pr_w/40">No packs yet.</p>
+          ) : null}
+
+          {packs.map((pack) => (
+            <div
+              key={pack.id}
+              className={`rounded-2xl border px-4 py-3 ${
+                pack.isActive ? "border-pr_w/10" : "border-red-500/20 opacity-70"
+              }`}
+            >
+              <div className="grid gap-2 md:grid-cols-[1.5fr_0.7fr_0.7fr_1fr_0.6fr_auto] md:items-end">
+                <div>
+                  <label className="text-[10px] text-pr_w/40">Name</label>
+                  <input
+                    type="text"
+                    value={pack.name}
+                    onChange={(e) => updatePackDraft(pack.id, { name: e.target.value })}
+                    className={smallInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-pr_w/40">Paid</label>
+                  <input
+                    type="number"
+                    value={pack.paidQty}
+                    onChange={(e) =>
+                      updatePackDraft(pack.id, { paidQty: Number(e.target.value) })
+                    }
+                    className={smallInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-pr_w/40">Bonus</label>
+                  <input
+                    type="number"
+                    value={pack.bonusQty}
+                    onChange={(e) =>
+                      updatePackDraft(pack.id, { bonusQty: Number(e.target.value) })
+                    }
+                    className={smallInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-pr_w/40">
+                    Price (cents) = {formatPrice(pack.priceCents, pack.currency)}
+                  </label>
+                  <input
+                    type="number"
+                    value={pack.priceCents}
+                    onChange={(e) =>
+                      updatePackDraft(pack.id, { priceCents: Number(e.target.value) })
+                    }
+                    className={smallInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-pr_w/40">Order</label>
+                  <input
+                    type="number"
+                    value={pack.sortOrder}
+                    onChange={(e) =>
+                      updatePackDraft(pack.id, { sortOrder: Number(e.target.value) })
+                    }
+                    className={smallInputClass}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSavePack(pack)}
+                    disabled={packBusyId === pack.id}
+                    className="rounded-full bg-pr_lg px-3 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
                   >
-                    <span>{pack.name}</span>
-                    <span className="text-pr_w/60">
-                      {pack.paidQty}+{pack.bonusQty} = {pack.totalUnits} |{" "}
-                      {formatPrice(pack.priceCents, pack.currency)}
-                    </span>
-                  </div>
-                ))}
+                    {packBusyId === pack.id ? "..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePackActive(pack)}
+                    disabled={packBusyId === pack.id}
+                    className={`rounded-full border px-3 py-1.5 text-xs disabled:opacity-60 ${
+                      pack.isActive
+                        ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                        : "border-green-500/30 text-green-400 hover:bg-green-500/10"
+                    }`}
+                  >
+                    {pack.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
               </div>
             </div>
-          ) : null}
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-dashed border-pr_w/20 px-4 py-3">
+          <p className="text-xs text-pr_w/60">Add new pack</p>
+          <div className="mt-2 grid gap-2 md:grid-cols-[1.5fr_0.7fr_0.7fr_1fr_auto] md:items-end">
+            <div>
+              <label className="text-[10px] text-pr_w/40">Name</label>
+              <input
+                type="text"
+                value={newPack.name}
+                onChange={(e) => setNewPack({ ...newPack, name: e.target.value })}
+                placeholder="Single"
+                className={smallInputClass}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-pr_w/40">Paid</label>
+              <input
+                type="number"
+                value={newPack.paidQty}
+                onChange={(e) =>
+                  setNewPack({ ...newPack, paidQty: Number(e.target.value) })
+                }
+                className={smallInputClass}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-pr_w/40">Bonus</label>
+              <input
+                type="number"
+                value={newPack.bonusQty}
+                onChange={(e) =>
+                  setNewPack({ ...newPack, bonusQty: Number(e.target.value) })
+                }
+                className={smallInputClass}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-pr_w/40">Price (cents)</label>
+              <input
+                type="number"
+                value={newPack.priceCents}
+                onChange={(e) =>
+                  setNewPack({ ...newPack, priceCents: Number(e.target.value) })
+                }
+                className={smallInputClass}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCreatePack}
+              disabled={creatingPack}
+              className="rounded-full bg-pr_lg px-4 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
+            >
+              {creatingPack ? "Adding..." : "+ Add"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
