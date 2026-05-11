@@ -128,8 +128,9 @@ export default function AdminProductNewPage() {
             <label className="text-xs text-pr_w/50">Price (cents) *</label>
             <input
               type="number"
+              min={0}
               value={priceCents}
-              onChange={(e) => setPriceCents(Number(e.target.value))}
+              onChange={(e) => setPriceCents(Math.max(0, Number(e.target.value)))}
               className={inputClass}
             />
           </div>
@@ -137,8 +138,9 @@ export default function AdminProductNewPage() {
             <label className="text-xs text-pr_w/50">Stock</label>
             <input
               type="number"
+              min={0}
               value={stockQty}
-              onChange={(e) => setStockQty(Number(e.target.value))}
+              onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
               className={inputClass}
             />
           </div>

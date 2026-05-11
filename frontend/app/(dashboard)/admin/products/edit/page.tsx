@@ -350,8 +350,9 @@ export default function AdminProductEditPage() {
               <label className="text-xs text-pr_w/50">Price (cents)</label>
               <input
                 type="number"
+                min={0}
                 value={priceCents}
-                onChange={(e) => setPriceCents(Number(e.target.value))}
+                onChange={(e) => setPriceCents(Math.max(0, Number(e.target.value)))}
                 className={inputClass}
               />
               <p className="mt-1 text-xs text-pr_w/30">
@@ -362,8 +363,9 @@ export default function AdminProductEditPage() {
               <label className="text-xs text-pr_w/50">Stock</label>
               <input
                 type="number"
+                min={0}
                 value={stockQty}
-                onChange={(e) => setStockQty(Number(e.target.value))}
+                onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
                 className={inputClass}
               />
             </div>
@@ -468,11 +470,16 @@ export default function AdminProductEditPage() {
                   <span className="text-pr_w/60">order</span>
                   <input
                     type="number"
+                    min={0}
                     defaultValue={img.sortOrder}
                     onBlur={(e) => {
-                      const next = Number(e.target.value);
-                      if (Number.isFinite(next) && next !== img.sortOrder) {
-                        handleImageSortOrderChange(img.id, Math.max(0, Math.trunc(next)));
+                      const raw = Number(e.target.value);
+                      const next = Number.isFinite(raw)
+                        ? Math.max(0, Math.trunc(raw))
+                        : img.sortOrder;
+                      e.target.value = String(next);
+                      if (next !== img.sortOrder) {
+                        handleImageSortOrderChange(img.id, next);
                       }
                     }}
                     className="w-12 rounded bg-transparent text-pr_w outline-none"
@@ -513,9 +520,12 @@ export default function AdminProductEditPage() {
                   <label className="text-[10px] text-pr_w/40">Paid</label>
                   <input
                     type="number"
+                    min={0}
                     value={pack.paidQty}
                     onChange={(e) =>
-                      updatePackDraft(pack.id, { paidQty: Number(e.target.value) })
+                      updatePackDraft(pack.id, {
+                        paidQty: Math.max(0, Number(e.target.value)),
+                      })
                     }
                     className={smallInputClass}
                   />
@@ -524,9 +534,12 @@ export default function AdminProductEditPage() {
                   <label className="text-[10px] text-pr_w/40">Bonus</label>
                   <input
                     type="number"
+                    min={0}
                     value={pack.bonusQty}
                     onChange={(e) =>
-                      updatePackDraft(pack.id, { bonusQty: Number(e.target.value) })
+                      updatePackDraft(pack.id, {
+                        bonusQty: Math.max(0, Number(e.target.value)),
+                      })
                     }
                     className={smallInputClass}
                   />
@@ -537,9 +550,12 @@ export default function AdminProductEditPage() {
                   </label>
                   <input
                     type="number"
+                    min={0}
                     value={pack.priceCents}
                     onChange={(e) =>
-                      updatePackDraft(pack.id, { priceCents: Number(e.target.value) })
+                      updatePackDraft(pack.id, {
+                        priceCents: Math.max(0, Number(e.target.value)),
+                      })
                     }
                     className={smallInputClass}
                   />
@@ -548,9 +564,12 @@ export default function AdminProductEditPage() {
                   <label className="text-[10px] text-pr_w/40">Order</label>
                   <input
                     type="number"
+                    min={0}
                     value={pack.sortOrder}
                     onChange={(e) =>
-                      updatePackDraft(pack.id, { sortOrder: Number(e.target.value) })
+                      updatePackDraft(pack.id, {
+                        sortOrder: Math.max(0, Number(e.target.value)),
+                      })
                     }
                     className={smallInputClass}
                   />
@@ -599,9 +618,13 @@ export default function AdminProductEditPage() {
               <label className="text-[10px] text-pr_w/40">Paid</label>
               <input
                 type="number"
+                min={0}
                 value={newPack.paidQty}
                 onChange={(e) =>
-                  setNewPack({ ...newPack, paidQty: Number(e.target.value) })
+                  setNewPack({
+                    ...newPack,
+                    paidQty: Math.max(0, Number(e.target.value)),
+                  })
                 }
                 className={smallInputClass}
               />
@@ -610,9 +633,13 @@ export default function AdminProductEditPage() {
               <label className="text-[10px] text-pr_w/40">Bonus</label>
               <input
                 type="number"
+                min={0}
                 value={newPack.bonusQty}
                 onChange={(e) =>
-                  setNewPack({ ...newPack, bonusQty: Number(e.target.value) })
+                  setNewPack({
+                    ...newPack,
+                    bonusQty: Math.max(0, Number(e.target.value)),
+                  })
                 }
                 className={smallInputClass}
               />
@@ -621,9 +648,13 @@ export default function AdminProductEditPage() {
               <label className="text-[10px] text-pr_w/40">Price (cents)</label>
               <input
                 type="number"
+                min={0}
                 value={newPack.priceCents}
                 onChange={(e) =>
-                  setNewPack({ ...newPack, priceCents: Number(e.target.value) })
+                  setNewPack({
+                    ...newPack,
+                    priceCents: Math.max(0, Number(e.target.value)),
+                  })
                 }
                 className={smallInputClass}
               />
