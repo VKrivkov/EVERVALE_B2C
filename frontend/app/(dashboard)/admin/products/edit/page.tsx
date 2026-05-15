@@ -10,8 +10,13 @@ import {
   updateProductImage,
   createProductPacks,
   updateProductPack,
+  createProductFilterValue,
+  updateProductFilterValue,
+  deleteProductFilterValue,
   AdminProduct,
+  AdminFilterValue,
 } from "@/services/admin";
+import { fetchCategoryFilters, CategoryFilter } from "@/services/categories";
 import { formatPrice } from "@/services/products";
 
 type PackDraft = {
@@ -59,14 +64,30 @@ export default function AdminProductEditPage() {
   const [description, setDescription] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [genBalance, setGenBalance] = useState("");
-  const [indicaPct, setIndicaPct] = useState<number | "">("");
-  const [sativaPct, setSativaPct] = useState<number | "">("");
   const [effectsText, setEffectsText] = useState("");
 
   const [packs, setPacks] = useState<PackDraft[]>([]);
   const [packBusyId, setPackBusyId] = useState<string | null>(null);
   const [newPack, setNewPack] = useState<NewPackDraft>(emptyNewPack);
   const [creatingPack, setCreatingPack] = useState(false);
+
+  const [categoryFilters, setCategoryFilters] = useState<CategoryFilter[]>([]);
+  const [filterBusyId, setFilterBusyId] = useState<string | null>(null);
+  const [newFilterSlug, setNewFilterSlug] = useState("");
+  const [newFilterDraft, setNewFilterDraft] = useState<{
+    optionValue: string;
+    booleanValue: boolean;
+    numberValue: string;
+    numberMin: string;
+    numberMax: string;
+  }>({
+    optionValue: "",
+    booleanValue: false,
+    numberValue: "",
+    numberMin: "",
+    numberMax: "",
+  });
+  const [creatingFilter, setCreatingFilter] = useState(false);
 
   const hydrateFromProduct = (p: AdminProduct) => {
     setProduct(p);
@@ -77,16 +98,6 @@ export default function AdminProductEditPage() {
     setDescription(p.content?.description ?? "");
     setSubtitle(p.content?.subtitle ?? "");
     setGenBalance(p.content?.gen_balance_desk ?? "");
-    setIndicaPct(
-      typeof p.content?.geneticBalance?.indica === "number"
-        ? p.content.geneticBalance.indica
-        : "",
-    );
-    setSativaPct(
-      typeof p.content?.geneticBalance?.sativa === "number"
-        ? p.content.geneticBalance.sativa
-        : "",
-    );
     setEffectsText((p.content?.effects ?? []).join(", "));
     setPacks(
       (p.packs ?? []).map((pack) => ({
@@ -106,7 +117,14 @@ export default function AdminProductEditPage() {
     if (!id) return;
     setLoading(true);
     fetchAdminProduct(id)
-      .then(hydrateFromProduct)
+      .then((p) => {
+        hydrateFromProduct(p);
+        if (p.category?.slug) {
+          fetchCategoryFilters(p.category.slug)
+            .then(setCategoryFilters)
+            .catch(() => setCategoryFilters([]));
+        }
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
@@ -135,23 +153,6 @@ export default function AdminProductEditPage() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const indicaNum =
-        typeof indicaPct === "number" && Number.isFinite(indicaPct)
-          ? Math.max(0, Math.min(100, indicaPct))
-          : undefined;
-      const sativaNum =
-        typeof sativaPct === "number" && Number.isFinite(sativaPct)
-          ? Math.max(0, Math.min(100, sativaPct))
-          : undefined;
-      const geneticBalance =
-        indicaNum !== undefined || sativaNum !== undefined
-          ? {
-              ...(product.content?.geneticBalance ?? {}),
-              ...(indicaNum !== undefined ? { indica: indicaNum } : {}),
-              ...(sativaNum !== undefined ? { sativa: sativaNum } : {}),
-            }
-          : product.content?.geneticBalance;
-
       await updateAdminProduct(id, {
         name: name.trim(),
         priceCents: normalizedPriceCents,
@@ -161,9 +162,8 @@ export default function AdminProductEditPage() {
           ...(product.content ?? {}),
           subtitle: subtitle.trim(),
           description: description.trim(),
-          gen_balance_desk: genBalance.trim(),
+          gen_balance_desk: genBalance,
           effects,
-          ...(geneticBalance ? { geneticBalance } : {}),
         },
       });
       const fresh = await reload();
@@ -239,9 +239,6 @@ export default function AdminProductEditPage() {
     try {
       await updateProductPack(id, pack.id, {
         name: pack.name.trim(),
-        paidQty: Math.max(0, Math.trunc(pack.paidQty)),
-        bonusQty: Math.max(0, Math.trunc(pack.bonusQty)),
-        priceCents: Math.max(0, Math.trunc(pack.priceCents)),
         isActive: pack.isActive,
         sortOrder: Math.max(0, Math.trunc(pack.sortOrder)),
       });
@@ -262,6 +259,23 @@ export default function AdminProductEditPage() {
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update pack");
+    } finally {
+      setPackBusyId(null);
+    }
+  };
+
+  const handleArchivePack = async (pack: PackDraft) => {
+    if (!id) return;
+    if (!window.confirm(`Archive pack "${pack.name}"? It won't be shown anymore.`)) {
+      return;
+    }
+    setPackBusyId(pack.id);
+    setError("");
+    try {
+      await updateProductPack(id, pack.id, { isArchived: true });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to archive pack");
     } finally {
       setPackBusyId(null);
     }
@@ -291,6 +305,98 @@ export default function AdminProductEditPage() {
       setError(err instanceof Error ? err.message : "Failed to create pack");
     } finally {
       setCreatingPack(false);
+    }
+  };
+
+  const resetNewFilterDraft = () => {
+    setNewFilterSlug("");
+    setNewFilterDraft({
+      optionValue: "",
+      booleanValue: false,
+      numberValue: "",
+      numberMin: "",
+      numberMax: "",
+    });
+  };
+
+  const handleCreateFilterValue = async () => {
+    if (!id) return;
+    const filter = categoryFilters.find((f) => f.slug === newFilterSlug);
+    if (!filter) {
+      setError("Pick a filter first");
+      return;
+    }
+    setCreatingFilter(true);
+    setError("");
+    try {
+      const payload: Record<string, unknown> = { filterSlug: filter.slug };
+      if (filter.type === "select" || filter.type === "multi") {
+        if (!newFilterDraft.optionValue.trim()) {
+          setError("Option value is required");
+          setCreatingFilter(false);
+          return;
+        }
+        payload.optionValue = newFilterDraft.optionValue.trim();
+      } else if (filter.type === "boolean") {
+        payload.booleanValue = newFilterDraft.booleanValue;
+      } else if (filter.type === "number") {
+        const n = Number(newFilterDraft.numberValue);
+        if (!Number.isFinite(n)) {
+          setError("Number value is required");
+          setCreatingFilter(false);
+          return;
+        }
+        payload.numberValue = n;
+      } else if (filter.type === "range") {
+        const min = Number(newFilterDraft.numberMin);
+        const max = Number(newFilterDraft.numberMax);
+        if (!Number.isFinite(min) || !Number.isFinite(max)) {
+          setError("Min and max are required for range filter");
+          setCreatingFilter(false);
+          return;
+        }
+        payload.numberMin = min;
+        payload.numberMax = max;
+      }
+      await createProductFilterValue(id, payload);
+      resetNewFilterDraft();
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add filter");
+    } finally {
+      setCreatingFilter(false);
+    }
+  };
+
+  const handleUpdateFilterValue = async (
+    fv: AdminFilterValue,
+    data: Parameters<typeof updateProductFilterValue>[2],
+  ) => {
+    if (!id) return;
+    setFilterBusyId(fv.id);
+    setError("");
+    try {
+      await updateProductFilterValue(id, fv.id, data);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update filter");
+    } finally {
+      setFilterBusyId(null);
+    }
+  };
+
+  const handleDeleteFilterValue = async (fv: AdminFilterValue) => {
+    if (!id) return;
+    if (!window.confirm(`Delete filter "${fv.filter.name}"?`)) return;
+    setFilterBusyId(fv.id);
+    setError("");
+    try {
+      await deleteProductFilterValue(id, fv.id);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete filter");
+    } finally {
+      setFilterBusyId(null);
     }
   };
 
@@ -381,45 +487,13 @@ export default function AdminProductEditPage() {
           </div>
           <div>
             <label className="text-xs text-pr_w/50">Genetic balance description</label>
-            <input
-              type="text"
+            <textarea
               value={genBalance}
               onChange={(e) => setGenBalance(e.target.value)}
-              placeholder="e.g. 60/40"
-              className={inputClass}
+              rows={4}
+              placeholder="Free-form text. Line breaks are preserved."
+              className={`${inputClass} min-h-[100px] rounded-2xl`}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-pr_w/50">Indica %</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={indicaPct}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setIndicaPct(raw === "" ? "" : Number(raw));
-                }}
-                placeholder="60"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-pr_w/50">Sativa %</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={sativaPct}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setSativaPct(raw === "" ? "" : Number(raw));
-                }}
-                placeholder="40"
-                className={inputClass}
-              />
-            </div>
           </div>
           <div>
             <label className="text-xs text-pr_w/50">Effects (comma-separated)</label>
@@ -506,57 +580,13 @@ export default function AdminProductEditPage() {
                 pack.isActive ? "border-pr_w/10" : "border-red-500/20 opacity-70"
               }`}
             >
-              <div className="grid gap-2 md:grid-cols-[1.5fr_0.7fr_0.7fr_1fr_0.6fr_auto] md:items-end">
+              <div className="grid gap-2 md:grid-cols-[1.5fr_0.6fr_auto] md:items-end">
                 <div>
                   <label className="text-[10px] text-pr_w/40">Name</label>
                   <input
                     type="text"
                     value={pack.name}
                     onChange={(e) => updatePackDraft(pack.id, { name: e.target.value })}
-                    className={smallInputClass}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-pr_w/40">Paid</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={pack.paidQty}
-                    onChange={(e) =>
-                      updatePackDraft(pack.id, {
-                        paidQty: Math.max(0, Number(e.target.value)),
-                      })
-                    }
-                    className={smallInputClass}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-pr_w/40">Bonus</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={pack.bonusQty}
-                    onChange={(e) =>
-                      updatePackDraft(pack.id, {
-                        bonusQty: Math.max(0, Number(e.target.value)),
-                      })
-                    }
-                    className={smallInputClass}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-pr_w/40">
-                    Price (cents) = {formatPrice(pack.priceCents, pack.currency)}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={pack.priceCents}
-                    onChange={(e) =>
-                      updatePackDraft(pack.id, {
-                        priceCents: Math.max(0, Number(e.target.value)),
-                      })
-                    }
                     className={smallInputClass}
                   />
                 </div>
@@ -574,7 +604,7 @@ export default function AdminProductEditPage() {
                     className={smallInputClass}
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => handleSavePack(pack)}
@@ -595,8 +625,21 @@ export default function AdminProductEditPage() {
                   >
                     {pack.isActive ? "Deactivate" : "Activate"}
                   </button>
+                  {!pack.isActive ? (
+                    <button
+                      type="button"
+                      onClick={() => handleArchivePack(pack)}
+                      disabled={packBusyId === pack.id}
+                      className="rounded-full border border-pr_w/30 px-3 py-1.5 text-xs text-pr_w/70 hover:bg-pr_w/5 disabled:opacity-60"
+                    >
+                      Archive
+                    </button>
+                  ) : null}
                 </div>
               </div>
+              <p className="mt-2 text-[11px] text-pr_w/40">
+                {pack.paidQty}+{pack.bonusQty} · {formatPrice(pack.priceCents, pack.currency)} · price &amp; quantities are locked after creation
+              </p>
             </div>
           ))}
         </div>
@@ -671,6 +714,21 @@ export default function AdminProductEditPage() {
         </div>
       </div>
 
+      <FilterValuesSection
+        productFilterValues={product.filterValues ?? []}
+        categoryFilters={categoryFilters}
+        newFilterSlug={newFilterSlug}
+        setNewFilterSlug={setNewFilterSlug}
+        newFilterDraft={newFilterDraft}
+        setNewFilterDraft={setNewFilterDraft}
+        creatingFilter={creatingFilter}
+        filterBusyId={filterBusyId}
+        onCreate={handleCreateFilterValue}
+        onUpdate={handleUpdateFilterValue}
+        onDelete={handleDeleteFilterValue}
+        smallInputClass={smallInputClass}
+      />
+
       <div className="mt-10 flex flex-wrap items-center gap-6 border-t border-pr_w/10 pt-6">
         <div className="flex items-center gap-3">
           <label className="text-xs text-pr_w/50">Active</label>
@@ -700,6 +758,340 @@ export default function AdminProductEditPage() {
 
         {error ? <span className="text-sm text-pr_dr">{error}</span> : null}
         {success ? <span className="text-sm text-green-400">{success}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+type NewFilterDraft = {
+  optionValue: string;
+  booleanValue: boolean;
+  numberValue: string;
+  numberMin: string;
+  numberMax: string;
+};
+
+function FilterValuesSection({
+  productFilterValues,
+  categoryFilters,
+  newFilterSlug,
+  setNewFilterSlug,
+  newFilterDraft,
+  setNewFilterDraft,
+  creatingFilter,
+  filterBusyId,
+  onCreate,
+  onUpdate,
+  onDelete,
+  smallInputClass,
+}: {
+  productFilterValues: AdminFilterValue[];
+  categoryFilters: CategoryFilter[];
+  newFilterSlug: string;
+  setNewFilterSlug: (v: string) => void;
+  newFilterDraft: NewFilterDraft;
+  setNewFilterDraft: (v: NewFilterDraft) => void;
+  creatingFilter: boolean;
+  filterBusyId: string | null;
+  onCreate: () => void;
+  onUpdate: (
+    fv: AdminFilterValue,
+    data: Parameters<typeof updateProductFilterValue>[2],
+  ) => void;
+  onDelete: (fv: AdminFilterValue) => void;
+  smallInputClass: string;
+}) {
+  const selectedFilter = categoryFilters.find((f) => f.slug === newFilterSlug);
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-sm font-semibold text-pr_w/80">Filter values</h2>
+      <p className="mt-1 text-xs text-pr_w/40">
+        Per-product filter values. Available filters come from the product category.
+      </p>
+
+      <div className="mt-3 space-y-3">
+        {productFilterValues.length === 0 ? (
+          <p className="text-xs text-pr_w/40">No filter values set.</p>
+        ) : null}
+
+        {productFilterValues.map((fv) => (
+          <FilterValueRow
+            key={fv.id}
+            fv={fv}
+            busy={filterBusyId === fv.id}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+            smallInputClass={smallInputClass}
+          />
+        ))}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-dashed border-pr_w/20 px-4 py-3">
+        <p className="text-xs text-pr_w/60">Add filter value</p>
+        <div className="mt-2 grid gap-2 md:grid-cols-[1fr_2fr_auto] md:items-end">
+          <div>
+            <label className="text-[10px] text-pr_w/40">Filter</label>
+            <select
+              value={newFilterSlug}
+              onChange={(e) => setNewFilterSlug(e.target.value)}
+              className={smallInputClass}
+            >
+              <option value="" className="bg-pr_dg">
+                Select filter…
+              </option>
+              {categoryFilters.map((f) => (
+                <option key={f.slug} value={f.slug} className="bg-pr_dg">
+                  {f.name} ({f.type})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <NewFilterValueInputs
+              filter={selectedFilter}
+              draft={newFilterDraft}
+              setDraft={setNewFilterDraft}
+              smallInputClass={smallInputClass}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onCreate}
+            disabled={creatingFilter || !selectedFilter}
+            className="rounded-full bg-pr_lg px-4 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
+          >
+            {creatingFilter ? "Adding..." : "+ Add"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewFilterValueInputs({
+  filter,
+  draft,
+  setDraft,
+  smallInputClass,
+}: {
+  filter: CategoryFilter | undefined;
+  draft: NewFilterDraft;
+  setDraft: (v: NewFilterDraft) => void;
+  smallInputClass: string;
+}) {
+  if (!filter) {
+    return <p className="text-[11px] text-pr_w/40">Pick a filter to enter a value.</p>;
+  }
+
+  if (filter.type === "select" || filter.type === "multi") {
+    if (filter.options && filter.options.length > 0) {
+      return (
+        <select
+          value={draft.optionValue}
+          onChange={(e) => setDraft({ ...draft, optionValue: e.target.value })}
+          className={smallInputClass}
+        >
+          <option value="" className="bg-pr_dg">
+            Select option…
+          </option>
+          {filter.options.map((o) => (
+            <option key={o.value} value={o.value} className="bg-pr_dg">
+              {o.value}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <input
+        type="text"
+        value={draft.optionValue}
+        onChange={(e) => setDraft({ ...draft, optionValue: e.target.value })}
+        placeholder="Option value"
+        className={smallInputClass}
+      />
+    );
+  }
+
+  if (filter.type === "boolean") {
+    return (
+      <select
+        value={draft.booleanValue ? "true" : "false"}
+        onChange={(e) =>
+          setDraft({ ...draft, booleanValue: e.target.value === "true" })
+        }
+        className={smallInputClass}
+      >
+        <option value="true" className="bg-pr_dg">
+          true
+        </option>
+        <option value="false" className="bg-pr_dg">
+          false
+        </option>
+      </select>
+    );
+  }
+
+  if (filter.type === "number") {
+    return (
+      <input
+        type="number"
+        value={draft.numberValue}
+        onChange={(e) => setDraft({ ...draft, numberValue: e.target.value })}
+        placeholder="Number"
+        className={smallInputClass}
+      />
+    );
+  }
+
+  if (filter.type === "range") {
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="number"
+          value={draft.numberMin}
+          onChange={(e) => setDraft({ ...draft, numberMin: e.target.value })}
+          placeholder="Min"
+          className={smallInputClass}
+        />
+        <input
+          type="number"
+          value={draft.numberMax}
+          onChange={(e) => setDraft({ ...draft, numberMax: e.target.value })}
+          placeholder="Max"
+          className={smallInputClass}
+        />
+      </div>
+    );
+  }
+
+  return <p className="text-[11px] text-pr_w/40">Unsupported filter type.</p>;
+}
+
+function FilterValueRow({
+  fv,
+  busy,
+  onUpdate,
+  onDelete,
+  smallInputClass,
+}: {
+  fv: AdminFilterValue;
+  busy: boolean;
+  onUpdate: (
+    fv: AdminFilterValue,
+    data: Parameters<typeof updateProductFilterValue>[2],
+  ) => void;
+  onDelete: (fv: AdminFilterValue) => void;
+  smallInputClass: string;
+}) {
+  const type = fv.filter.type;
+  const [optionValue, setOptionValue] = useState(
+    fv.option?.value ?? (typeof fv.value === "string" ? fv.value : ""),
+  );
+  const [boolValue, setBoolValue] = useState(Boolean(fv.booleanValue ?? fv.value));
+  const [numberValue, setNumberValue] = useState(
+    String(fv.numberValue ?? (typeof fv.value === "number" ? fv.value : "")),
+  );
+  const [numberMin, setNumberMin] = useState(
+    fv.numberMin != null ? String(fv.numberMin) : "",
+  );
+  const [numberMax, setNumberMax] = useState(
+    fv.numberMax != null ? String(fv.numberMax) : "",
+  );
+
+  const handleSave = () => {
+    if (type === "select" || type === "multi") {
+      onUpdate(fv, { optionValue: optionValue.trim() });
+    } else if (type === "boolean") {
+      onUpdate(fv, { booleanValue: boolValue });
+    } else if (type === "number") {
+      const n = Number(numberValue);
+      if (!Number.isFinite(n)) return;
+      onUpdate(fv, { numberValue: n });
+    } else if (type === "range") {
+      const min = Number(numberMin);
+      const max = Number(numberMax);
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      onUpdate(fv, { numberMin: min, numberMax: max });
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-pr_w/10 px-4 py-3">
+      <div className="grid gap-2 md:grid-cols-[1fr_2fr_auto] md:items-end">
+        <div>
+          <p className="text-xs text-pr_w/80">{fv.filter.name}</p>
+          <p className="text-[10px] text-pr_w/40">type: {type}</p>
+        </div>
+        <div>
+          {type === "select" || type === "multi" ? (
+            <input
+              type="text"
+              value={optionValue}
+              onChange={(e) => setOptionValue(e.target.value)}
+              className={smallInputClass}
+            />
+          ) : null}
+          {type === "boolean" ? (
+            <select
+              value={boolValue ? "true" : "false"}
+              onChange={(e) => setBoolValue(e.target.value === "true")}
+              className={smallInputClass}
+            >
+              <option value="true" className="bg-pr_dg">
+                true
+              </option>
+              <option value="false" className="bg-pr_dg">
+                false
+              </option>
+            </select>
+          ) : null}
+          {type === "number" ? (
+            <input
+              type="number"
+              value={numberValue}
+              onChange={(e) => setNumberValue(e.target.value)}
+              className={smallInputClass}
+            />
+          ) : null}
+          {type === "range" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                value={numberMin}
+                onChange={(e) => setNumberMin(e.target.value)}
+                placeholder="Min"
+                className={smallInputClass}
+              />
+              <input
+                type="number"
+                value={numberMax}
+                onChange={(e) => setNumberMax(e.target.value)}
+                placeholder="Max"
+                className={smallInputClass}
+              />
+            </div>
+          ) : null}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={busy}
+            className="rounded-full bg-pr_lg px-3 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
+          >
+            {busy ? "..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(fv)}
+            disabled={busy}
+            className="rounded-full border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-60"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

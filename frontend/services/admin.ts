@@ -79,8 +79,37 @@ export type AdminProduct = {
     priceCents: number;
     currency: string;
     isActive: boolean;
+    isArchived?: boolean;
     sortOrder: number;
   }>;
+  filterValues?: Array<AdminFilterValue>;
+};
+
+export type AdminFilterValue = {
+  id: string;
+  filter: {
+    id: string;
+    name: string;
+    slug: string;
+    type: "select" | "multi" | "boolean" | "number" | "range" | string;
+  };
+  option?: { id: string; value: string } | null;
+  value?: string | number | boolean | null;
+  numberMin?: number | null;
+  numberMax?: number | null;
+  booleanValue?: boolean | null;
+  numberValue?: number | null;
+};
+
+export type FilterValueInput = {
+  filterId?: string;
+  filterSlug?: string;
+  optionId?: string;
+  optionValue?: string;
+  booleanValue?: boolean;
+  numberValue?: number;
+  numberMin?: number;
+  numberMax?: number;
 };
 
 export type AdminProductsResponse = {
@@ -244,6 +273,60 @@ export async function updateProductPack(
   if (!response.ok) {
     const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
     throw new Error(buildAdminErrorMessage(err, "Failed to update pack"));
+  }
+  return response.json();
+}
+
+export async function createProductFilterValue(
+  productId: string,
+  data: FilterValueInput,
+) {
+  const response = await apiFetch(
+    `/admin/products/${productId}/filter-values`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to create filter value"));
+  }
+  return response.json() as Promise<AdminFilterValue>;
+}
+
+export async function updateProductFilterValue(
+  productId: string,
+  filterValueId: string,
+  data: Omit<FilterValueInput, "filterId" | "filterSlug">,
+) {
+  const response = await apiFetch(
+    `/admin/products/${productId}/filter-values/${filterValueId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to update filter value"));
+  }
+  return response.json() as Promise<AdminFilterValue>;
+}
+
+export async function deleteProductFilterValue(
+  productId: string,
+  filterValueId: string,
+) {
+  const response = await apiFetch(
+    `/admin/products/${productId}/filter-values/${filterValueId}`,
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
+    throw new Error(buildAdminErrorMessage(err, "Failed to delete filter value"));
   }
   return response.json();
 }
