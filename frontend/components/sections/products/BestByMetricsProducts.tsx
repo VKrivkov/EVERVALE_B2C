@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import ProductCard from "@/components/ui/ProductCard";
@@ -235,49 +238,49 @@ function buildFallbackProductCards(
   }, []);
 }
 
-export default async function BestByMetricsProducts() {
-  let products: ProductCardItem[] = [];
+export default function BestByMetricsProducts() {
+  const [products, setProducts] = useState<ProductCardItem[]>([]);
 
-  try {
+  useEffect(() => {
+    let active = true;
     const by = METRICS.map(
       (metric) => `${metric.key}:${metric.requestDirection}`,
     ).join(",");
 
-    const bestByMetric = await fetchBestProductsByMetrics(
-      {
-        by,
-        top: 1,
-      },
-      {
-        next: { revalidate: 300 },
-      },
-    );
+    const load = async () => {
+      let next: ProductCardItem[] = [];
+      try {
+        const bestByMetric = await fetchBestProductsByMetrics({ by, top: 1 });
+        next = METRICS.reduce<ProductCardItem[]>((acc, metric) => {
+          const pickedProduct = pickProductFromBestMetricBucket(
+            bestByMetric[metric.key],
+            metric.rankMode,
+          );
+          if (!pickedProduct) return acc;
+          acc.push(toProductCardItem(pickedProduct, metric));
+          return acc;
+        }, []);
+      } catch {
+        next = [];
+      }
 
-    products = METRICS.reduce<ProductCardItem[]>((acc, metric) => {
-      const pickedProduct = pickProductFromBestMetricBucket(
-        bestByMetric[metric.key],
-        metric.rankMode,
-      );
-      if (!pickedProduct) return acc;
+      if (next.length === 0) {
+        try {
+          const items = await fetchAllProducts();
+          next = buildFallbackProductCards(items);
+        } catch {
+          next = [];
+        }
+      }
 
-      acc.push(toProductCardItem(pickedProduct, metric));
-      return acc;
-    }, []);
-  } catch {
-    products = [];
-  }
+      if (active) setProducts(next);
+    };
 
-  if (products.length === 0) {
-    try {
-      const items = await fetchAllProducts(undefined, {
-        next: { revalidate: 300 },
-      });
-
-      products = buildFallbackProductCards(items);
-    } catch {
-      products = [];
-    }
-  }
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[130px]">

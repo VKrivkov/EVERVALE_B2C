@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import ProductCard from "@/components/ui/ProductCard";
@@ -52,52 +55,57 @@ function getThcScore(item: ProductListItem) {
   return Math.max(...scores);
 }
 
-export default async function BestThcProducts() {
-  let products: ProductCardItem[] = [];
+export default function BestThcProducts() {
+  const [products, setProducts] = useState<ProductCardItem[]>([]);
 
-  try {
-    const items = await fetchAllProducts(undefined, {
-      next: { revalidate: 300 },
-    });
+  useEffect(() => {
+    let active = true;
+    fetchAllProducts()
+      .then((items) => {
+        if (!active) return;
+        const itemsWithSlug = items.filter(
+          (item): item is typeof item & { slug: string } => Boolean(item.slug),
+        );
 
-    const itemsWithSlug = items.filter(
-      (item): item is typeof item & { slug: string } => Boolean(item.slug),
-    );
+        let ranked = itemsWithSlug
+          .map((item) => ({ item, score: getThcScore(item) }))
+          .filter(
+            (entry): entry is { item: ProductListItem & { slug: string }; score: number } =>
+              entry.score !== undefined,
+          )
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return (b.item.soldCount ?? 0) - (a.item.soldCount ?? 0);
+          })
+          .slice(0, 4)
+          .map(({ item }) => item);
 
-    let ranked = itemsWithSlug
-      .map((item) => ({
-        item,
-        score: getThcScore(item),
-      }))
-      .filter((entry): entry is { item: ProductListItem & { slug: string }; score: number } =>
-        entry.score !== undefined,
-      )
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return (b.item.soldCount ?? 0) - (a.item.soldCount ?? 0);
+        if (ranked.length === 0) {
+          ranked = itemsWithSlug
+            .slice()
+            .sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0))
+            .slice(0, 4);
+        }
+
+        setProducts(
+          ranked.map((item) => ({
+            productId: item.slug,
+            slug: item.slug,
+            title: item.name,
+            description: item.content?.description ?? "Premium product",
+            price: formatPrice(item.priceCents, item.currency),
+            imageUrl: getPrimaryImageUrl(item.images),
+            purchaseOptions: getProductPurchaseOptions(item),
+          })),
+        );
       })
-      .slice(0, 4)
-      .map(({ item }) => item);
-
-    if (ranked.length === 0) {
-      ranked = itemsWithSlug
-        .slice()
-        .sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0))
-        .slice(0, 4);
-    }
-
-    products = ranked.map((item) => ({
-      productId: item.slug,
-      slug: item.slug,
-      title: item.name,
-      description: item.content?.description ?? "Premium product",
-      price: formatPrice(item.priceCents, item.currency),
-      imageUrl: getPrimaryImageUrl(item.images),
-      purchaseOptions: getProductPurchaseOptions(item),
-    }));
-  } catch {
-    products = [];
-  }
+      .catch(() => {
+        if (active) setProducts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[130px]">

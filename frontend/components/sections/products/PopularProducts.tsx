@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import ProductCard from "@/components/ui/ProductCard";
@@ -24,41 +27,47 @@ type ProductCardItem = {
   purchaseOptions: ProductPurchaseOption[];
 };
 
-export default async function PopularProducts() {
-  let products: ProductCardItem[] = [];
+export default function PopularProducts() {
+  const [products, setProducts] = useState<ProductCardItem[]>([]);
 
-  try {
-    const items = await fetchAllProducts(undefined, {
-      next: { revalidate: 300 },
-    });
-
-    products = items
-      .filter((item): item is typeof item & { slug: string } =>
-        Boolean(item.slug),
-      )
-      .slice()
-      .sort((a, b) => {
-        if ((b.soldCount ?? 0) !== (a.soldCount ?? 0)) {
-          return (b.soldCount ?? 0) - (a.soldCount ?? 0);
-        }
-        const aDate = a.createdAt ? Date.parse(a.createdAt) : 0;
-        const bDate = b.createdAt ? Date.parse(b.createdAt) : 0;
-        return bDate - aDate;
+  useEffect(() => {
+    let active = true;
+    fetchAllProducts()
+      .then((items) => {
+        if (!active) return;
+        const next = items
+          .filter((item): item is typeof item & { slug: string } =>
+            Boolean(item.slug),
+          )
+          .slice()
+          .sort((a, b) => {
+            if ((b.soldCount ?? 0) !== (a.soldCount ?? 0)) {
+              return (b.soldCount ?? 0) - (a.soldCount ?? 0);
+            }
+            const aDate = a.createdAt ? Date.parse(a.createdAt) : 0;
+            const bDate = b.createdAt ? Date.parse(b.createdAt) : 0;
+            return bDate - aDate;
+          })
+          .slice(0, 4)
+          .map((item) => ({
+            productId: item.slug,
+            slug: item.slug,
+            title: item.name,
+            description: item.content?.description ?? "Premium product",
+            price: formatPrice(item.priceCents, item.currency),
+            imageUrl: getPrimaryImageUrl(item.images),
+            hoverInfo: buildProductHoverInfo(item),
+            purchaseOptions: getProductPurchaseOptions(item),
+          }));
+        setProducts(next);
       })
-      .slice(0, 4)
-      .map((item) => ({
-        productId: item.slug,
-        slug: item.slug,
-        title: item.name,
-        description: item.content?.description ?? "Premium product",
-        price: formatPrice(item.priceCents, item.currency),
-        imageUrl: getPrimaryImageUrl(item.images),
-        hoverInfo: buildProductHoverInfo(item),
-        purchaseOptions: getProductPurchaseOptions(item),
-      }));
-  } catch {
-    products = [];
-  }
+      .catch(() => {
+        if (active) setProducts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section className="w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-[130px]">
