@@ -35,6 +35,7 @@ export type AdminProduct = {
   id: string;
   name: string;
   slug: string;
+  subtitle?: string;
   priceCents: number;
   currency: string;
   stockQty: number;

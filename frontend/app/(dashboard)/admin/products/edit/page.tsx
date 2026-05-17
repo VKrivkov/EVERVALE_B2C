@@ -96,7 +96,7 @@ export default function AdminProductEditPage() {
     setStockQty(p.stockQty);
     setIsActive(p.isActive);
     setDescription(p.content?.description ?? "");
-    setSubtitle(p.content?.subtitle ?? "");
+    setSubtitle(p.subtitle ?? p.content?.subtitle ?? "");
     setGenBalance(p.content?.gen_balance_desk ?? "");
     setEffectsText((p.content?.effects ?? []).join(", "));
     setPacks(
@@ -155,6 +155,7 @@ export default function AdminProductEditPage() {
 
       await updateAdminProduct(id, {
         name: name.trim(),
+        subtitle: subtitle.trim(),
         priceCents: normalizedPriceCents,
         stockQty: normalizedStockQty,
         isActive,
