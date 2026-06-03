@@ -1,8 +1,9 @@
 [build]
   base = "frontend"
-  command = "yarn build"
+  command = "npm ci && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
+  NETLIFY_USE_YARN = "false"

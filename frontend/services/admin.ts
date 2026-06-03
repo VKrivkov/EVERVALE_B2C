@@ -60,6 +60,7 @@ export type AdminProduct = {
   image?: {
     id: string;
     url: string | null;
+    alt?: string | null;
     s3Key: string | null;
     sortOrder: number;
     resolvedUrl: string;
@@ -67,6 +68,7 @@ export type AdminProduct = {
   images?: Array<{
     id: string;
     url: string | null;
+    alt?: string | null;
     s3Key: string | null;
     sortOrder: number;
     resolvedUrl: string;
@@ -196,10 +198,16 @@ export async function deleteAdminProduct(productId: string) {
   return (await response.json()) as AdminProduct;
 }
 
-export async function uploadProductImage(productId: string, file: File, sortOrder = 0) {
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  sortOrder = 0,
+  alt?: string,
+) {
   const formData = new FormData();
   formData.append("image", file);
   formData.append("sortOrder", String(sortOrder));
+  if (alt != null) formData.append("alt", alt);
 
   const response = await apiFetch(`/admin/products/${productId}/images`, {
     method: "POST",
@@ -215,7 +223,7 @@ export async function uploadProductImage(productId: string, file: File, sortOrde
 export async function updateProductImage(
   productId: string,
   imageId: string,
-  data: { sortOrder?: number },
+  data: { sortOrder?: number; alt?: string | null },
 ) {
   const response = await apiFetch(`/admin/products/${productId}/images/${imageId}`, {
     method: "PATCH",

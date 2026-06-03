@@ -217,6 +217,16 @@ export default function AdminProductEditPage() {
     }
   };
 
+  const handleImageAltChange = async (imageId: string, alt: string) => {
+    if (!id) return;
+    try {
+      await updateProductImage(id, imageId, { alt: alt.trim() || null });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update alt");
+    }
+  };
+
   const handleDeleteImage = async (imageId: string) => {
     if (!id) return;
     try {
@@ -531,7 +541,7 @@ export default function AdminProductEditPage() {
               <div key={img.id} className="relative group">
                 <img
                   src={img.resolvedUrl || img.url || ""}
-                  alt=""
+                  alt={img.alt ?? ""}
                   className="h-32 w-full rounded-xl object-cover"
                 />
                 <button
@@ -560,6 +570,18 @@ export default function AdminProductEditPage() {
                     className="w-12 rounded bg-transparent text-pr_w outline-none"
                   />
                 </div>
+                <input
+                  type="text"
+                  defaultValue={img.alt ?? ""}
+                  placeholder="alt text"
+                  onBlur={(e) => {
+                    const next = e.target.value;
+                    if ((next || "") !== (img.alt || "")) {
+                      handleImageAltChange(img.id, next);
+                    }
+                  }}
+                  className="mt-1 w-full rounded bg-pr_w/5 px-2 py-1 text-[10px] text-pr_w outline-none"
+                />
               </div>
             ))}
           </div>

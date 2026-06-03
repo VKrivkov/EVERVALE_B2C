@@ -52,37 +52,37 @@ export default function WhyChooseUs() {
         </p>
       </div>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2 ">
+      <div className="mt-8 grid gap-5 md:grid-cols-2 ">
         {reasons.map((reason) => (
           <article
             key={reason.title}
             data-no-reveal="true"
-            className="relative min-h-[260px] overflow-hidden rounded-tr-[32px] rounded-bl-[32px] border border-pr_w/20 bg-pr_w p-8 text-pr_dg transform-gpu transition-transform duration-500 ease-[cubic-bezier(0.25,0.9,0.35,1)] hover:-translate-y-1 sm:p-9"
+            className="relative min-h-50 overflow-hidden rounded-tr-[28px] rounded-bl-[28px] border border-pr_w/20 bg-pr_w p-6 text-pr_dg transform-gpu transition-transform duration-500 ease-[cubic-bezier(0.25,0.9,0.35,1)] hover:-translate-y-1 sm:p-7"
           >
             <Image
               src={reason.backgroundIcon}
               alt=""
               aria-hidden
-              className="pointer-events-none absolute -right-12 -top-8 h-[240px] w-[240px] opacity-10"
+              className="pointer-events-none absolute -right-10 -top-6 h-47.5 w-47.5 opacity-10"
             />
 
             <div className="relative z-10 flex h-full flex-col">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-pr_dg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pr_dg">
                 <Image
                   src={reason.badgeIcon}
                   alt=""
                   aria-hidden
-                  width={64}
-                  height={64}
-                  className="h-[64px] w-[64px]"
+                  width={56}
+                  height={56}
+                  className="h-14 w-14"
                 />
               </div>
 
-              <div className="mt-auto pt-20">
-                <h3 className="text-3xl font-semibold leading-tight text-pr_dg">
+              <div className="mt-auto pt-14">
+                <h3 className="text-2xl font-semibold leading-tight text-pr_dg">
                   {reason.title}
                 </h3>
-                <p className="mt-4 text-lg leading-relaxed text-pr_dg/70">
+                <p className="mt-3 text-base leading-relaxed text-pr_dg/70">
                   {reason.description}
                 </p>
               </div>

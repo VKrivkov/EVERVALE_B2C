@@ -7,6 +7,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const navItems = [
   { label: "Products", href: "/admin/products" },
+  { label: "Blogs", href: "/admin/blogs" },
+  { label: "Blog Categories", href: "/admin/blog-categories" },
 ];
 
 function NotFound() {
