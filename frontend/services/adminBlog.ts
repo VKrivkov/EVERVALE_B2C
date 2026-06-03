@@ -111,13 +111,24 @@ export type AdminBlogsResponse = {
   items: AdminBlog[];
 };
 
+function toArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (Array.isArray(obj.items)) return obj.items as T[];
+    if (Array.isArray(obj.data)) return obj.data as T[];
+    if (Array.isArray(obj.results)) return obj.results as T[];
+  }
+  return [];
+}
+
 export async function fetchAdminBlogCategories() {
   const response = await apiFetch("/admin/blog-categories");
   if (!response.ok) {
     const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
     throw new Error(buildErrorMessage(err, "Failed to load blog categories"));
   }
-  return (await response.json()) as AdminBlogCategory[];
+  return toArray<AdminBlogCategory>(await response.json());
 }
 
 export async function createAdminBlogCategory(data: {
@@ -177,7 +188,16 @@ export async function fetchAdminBlogs(params?: {
     const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
     throw new Error(buildErrorMessage(err, "Failed to load blogs"));
   }
-  return (await response.json()) as AdminBlogsResponse;
+  const raw = (await response.json()) as Partial<AdminBlogsResponse> | AdminBlog[];
+  if (Array.isArray(raw)) {
+    return { page: 1, limit: raw.length, total: raw.length, items: raw };
+  }
+  return {
+    page: raw.page ?? 1,
+    limit: raw.limit ?? 20,
+    total: raw.total ?? 0,
+    items: Array.isArray(raw.items) ? raw.items : [],
+  };
 }
 
 export async function fetchAdminBlog(blogId: string) {
@@ -239,7 +259,7 @@ export async function fetchAdminBlogImages(blogId: string) {
     const err = (await response.json().catch(() => ({}))) as ApiValidationErrorPayload;
     throw new Error(buildErrorMessage(err, "Failed to load images"));
   }
-  return (await response.json()) as AdminBlogImage[];
+  return toArray<AdminBlogImage>(await response.json());
 }
 
 export async function uploadAdminBlogImage(

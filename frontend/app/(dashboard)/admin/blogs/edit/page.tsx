@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   fetchAdminBlog,
@@ -27,7 +27,6 @@ const smallInputClass =
   "w-full rounded-lg border border-pr_w/15 bg-transparent px-2 py-1 text-xs outline-none";
 
 export default function AdminBlogEditPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,20 +53,22 @@ export default function AdminBlogEditPage() {
 
   const hydrate = (b: AdminBlog) => {
     setBlog(b);
-    setTitle(b.title);
-    setSlug(b.slug);
+    setTitle(b.title ?? "");
+    setSlug(b.slug ?? "");
     setExcerpt(b.excerpt ?? "");
     setReadTime(b.readTime ?? 0);
     setIsActive(Boolean(b.isActive));
     setCategoryId(b.category?.id ?? b.categoryId ?? "");
     setMainImageId(b.mainImageId ?? b.mainImage?.id ?? null);
     setContent(Array.isArray(b.content) ? b.content : []);
+    const seoRaw = (b.seoMetadata ?? {}) as Partial<BlogSeoMetadata>;
     setSeo({
-      ...EMPTY_BLOG_SEO,
-      ...(b.seoMetadata ?? {}),
-      keywords: Array.isArray(b.seoMetadata?.keywords)
-        ? b.seoMetadata!.keywords
-        : [],
+      title: seoRaw.title ?? "",
+      description: seoRaw.description ?? "",
+      keywords: Array.isArray(seoRaw.keywords) ? seoRaw.keywords : [],
+      robots: seoRaw.robots ?? "index,follow",
+      ogTitle: seoRaw.ogTitle ?? "",
+      ogDescription: seoRaw.ogDescription ?? "",
     });
   };
 
@@ -289,15 +290,9 @@ export default function AdminBlogEditPage() {
               onChange={(e) => setTitle(e.target.value)}
               className={inputClass}
             />
-          </div>
-          <div>
-            <label className="text-xs text-pr_w/60">Slug</label>
-            <input
-              type="text"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className={inputClass}
-            />
+            {slug ? (
+              <p className="mt-1 text-[10px] text-pr_w/40">slug: {slug}</p>
+            ) : null}
           </div>
           <div>
             <label className="text-xs text-pr_w/60">Category</label>
@@ -353,28 +348,29 @@ export default function AdminBlogEditPage() {
 
       <section className="mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-pr_w/80">Image library</h2>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="rounded-full bg-pr_lg px-4 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
-            >
-              {uploading ? "Uploading…" : "+ Upload image"}
-            </button>
-          </div>
+          <h2 className="text-sm font-semibold text-pr_w/80">
+            Image library ({images.length})
+          </h2>
         </div>
 
-        <div className="mt-3">
-          <label className="text-xs text-pr_w/60">Main image</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pr_w/30 bg-pr_w/5 px-4 py-8 text-sm font-semibold text-pr_w hover:bg-pr_w/10 disabled:opacity-60"
+        >
+          {uploading ? "Uploading…" : "+ Click to upload image (jpeg, png, webp, gif · max 5MB)"}
+        </button>
+
+        <div className="mt-4">
+          <label className="text-xs text-pr_w/60">Main image (cover)</label>
           <select
             value={mainImageId ?? ""}
             onChange={(e) => setMainImageId(e.target.value || null)}

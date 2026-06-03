@@ -17,6 +17,16 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function isSlugConflict(message: string) {
+  const m = message.toLowerCase();
+  return (
+    m.includes("conflict") ||
+    m.includes("already exists") ||
+    m.includes("slug") ||
+    m.includes("409")
+  );
+}
+
 export default function AdminBlogNewPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<AdminBlogCategory[]>([]);
@@ -24,7 +34,6 @@ export default function AdminBlogNewPage() {
   const [creating, setCreating] = useState(false);
 
   const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [readTime, setReadTime] = useState(0);
   const [categoryId, setCategoryId] = useState("");
@@ -42,7 +51,8 @@ export default function AdminBlogNewPage() {
   }, []);
 
   const handleCreate = async () => {
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setError("Title is required");
       return;
     }
@@ -52,15 +62,41 @@ export default function AdminBlogNewPage() {
     }
     setCreating(true);
     setError("");
-    try {
-      const finalSlug = (slug.trim() || slugify(title)).toLowerCase();
-      const created = await createAdminBlog({
+    const baseSlug = slugify(trimmedTitle) || `blog-${Date.now()}`;
+    const readTimeValue = Number.isFinite(readTime)
+      ? Math.max(0, Math.trunc(readTime))
+      : 0;
+
+    const attempt = async (slug: string) =>
+      createAdminBlog({
         categoryId,
-        title: title.trim(),
-        slug: finalSlug,
+        title: trimmedTitle,
+        slug,
         excerpt: excerpt.trim() || undefined,
-        readTime: Number.isFinite(readTime) ? Math.max(0, Math.trunc(readTime)) : 0,
+        readTime: readTimeValue,
       });
+
+    try {
+      let created;
+      try {
+        created = await attempt(baseSlug);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!isSlugConflict(msg)) throw err;
+        let lastErr: unknown = err;
+        for (let i = 0; i < 5; i++) {
+          const suffix = `-${Math.random().toString(36).slice(2, 6)}`;
+          try {
+            created = await attempt(`${baseSlug}${suffix}`);
+            break;
+          } catch (e) {
+            lastErr = e;
+            const m = e instanceof Error ? e.message : String(e);
+            if (!isSlugConflict(m)) throw e;
+          }
+        }
+        if (!created) throw lastErr;
+      }
       router.push(`/admin/blogs/edit?id=${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create blog");
@@ -83,6 +119,11 @@ export default function AdminBlogNewPage() {
           ← Back
         </Link>
       </div>
+
+      <p className="mt-2 text-xs text-pr_w/50">
+        Start with the basics. You can add images, content blocks and SEO after
+        creation.
+      </p>
 
       {error ? <p className="mt-4 text-sm text-pr_dr">{error}</p> : null}
 
@@ -116,19 +157,7 @@ export default function AdminBlogNewPage() {
           <input
             type="text"
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (!slug) setSlug(slugify(e.target.value));
-            }}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-pr_w/60">Slug</label>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => setTitle(e.target.value)}
             className={inputClass}
           />
         </div>

@@ -80,7 +80,19 @@ export async function fetchPublicBlogs(params?: {
   if (!response.ok) {
     return { page: 1, limit: 20, total: 0, items: [] };
   }
-  return (await response.json()) as PublicBlogsResponse;
+  const raw = (await response.json().catch(() => null)) as
+    | Partial<PublicBlogsResponse>
+    | PublicBlogListItem[]
+    | null;
+  if (Array.isArray(raw)) {
+    return { page: 1, limit: raw.length, total: raw.length, items: raw };
+  }
+  return {
+    page: raw?.page ?? 1,
+    limit: raw?.limit ?? 20,
+    total: raw?.total ?? 0,
+    items: Array.isArray(raw?.items) ? raw!.items! : [],
+  };
 }
 
 export async function fetchPublicBlog(slug: string): Promise<PublicBlogDetail | null> {
