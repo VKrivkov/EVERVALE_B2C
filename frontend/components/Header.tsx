@@ -14,13 +14,13 @@ const BUSINESS_URL = "https://b2b.evervale.org/";
 const tabs: SectionTab[] = [
   { id: "home", label: "Home", href: "/" },
   { id: "seeds", label: "Seeds", href: "/products" },
+  { id: "blog", label: "Blog", href: "/blog" },
   {
     id: "business",
     label: "For Business",
     href: BUSINESS_URL,
     external: true,
   },
-  { id: "blog", label: "Blog", href: "/blog" },
 ];
 
 const Header = () => {
