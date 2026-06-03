@@ -20,6 +20,7 @@ const tabs: SectionTab[] = [
     href: BUSINESS_URL,
     external: true,
   },
+  { id: "blog", label: "Blog", href: "/blog" },
 ];
 
 const Header = () => {
@@ -54,6 +55,7 @@ const Header = () => {
     if (pathname === "/") return "home";
     if (pathname.startsWith("/products")) return "seeds";
     if (pathname.startsWith("/seeds")) return "seeds";
+    if (pathname.startsWith("/blog")) return "blog";
     return "home";
   }, [pathname]);
 

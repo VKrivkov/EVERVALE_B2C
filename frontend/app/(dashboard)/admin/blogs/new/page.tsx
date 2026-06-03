@@ -121,8 +121,15 @@ export default function AdminBlogNewPage() {
       </div>
 
       <p className="mt-2 text-xs text-pr_w/50">
-        Start with the basics. You can add images, content blocks and SEO after
-        creation.
+        Step 1: pick a category and title to create the draft. You&apos;ll then
+        land on the full editor where you can upload images, add content blocks,
+        fill SEO and publish.
+      </p>
+
+      <p className="mt-2 text-[11px] text-yellow-300/80">
+        Blogs are created as drafts (inactive). They only appear on the public
+        /blog list after you toggle &quot;Active&quot; or click &quot;Publish
+        now&quot; on the editor.
       </p>
 
       {error ? <p className="mt-4 text-sm text-pr_dr">{error}</p> : null}
@@ -189,7 +196,7 @@ export default function AdminBlogNewPage() {
           disabled={creating || categories.length === 0}
           className="rounded-full bg-pr_lg px-6 py-2 text-sm font-semibold text-pr_dg disabled:opacity-60"
         >
-          {creating ? "Creating…" : "Create blog"}
+          {creating ? "Creating…" : "Save & continue to editor →"}
         </button>
       </div>
     </div>
