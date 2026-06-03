@@ -7,3 +7,11 @@
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
   NETLIFY_USE_YARN = "false"
+
+# Fallback for blog posts created after build (output:"export" can't generate
+# their static HTML). Netlify only applies this when no static file exists at
+# the requested path, so build-time-known slugs still serve their own HTML.
+[[redirects]]
+  from = "/blog/*"
+  to = "/blog/post/index.html"
+  status = 200

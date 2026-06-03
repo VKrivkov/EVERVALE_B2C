@@ -110,6 +110,21 @@ export default function AdminBlogEditPage() {
     setError("");
     setSuccess("");
     try {
+      const sanitizedContent = content.map((block) => {
+        if (block.type === "text") {
+          return { type: "text", body: block.body };
+        }
+        if (block.type === "image") {
+          return { type: "image", imageId: block.imageId };
+        }
+        return {
+          type: "text_image",
+          imagePosition: block.imagePosition,
+          body: block.body,
+          imageId: block.imageId,
+        };
+      });
+
       const payload: Record<string, unknown> = {
         title: title.trim(),
         slug: slug.trim(),
@@ -119,7 +134,7 @@ export default function AdminBlogEditPage() {
           : 0,
         isActive,
         mainImageId: mainImageId ?? null,
-        content,
+        content: sanitizedContent,
         seoMetadata: {
           title: seo.title,
           description: seo.description,
