@@ -557,12 +557,27 @@ export default function AdminBlogEditPage() {
           </div>
           <div>
             <label className="text-xs text-pr_w/60">Robots</label>
-            <input
-              type="text"
-              value={seo.robots}
+            <select
+              value={
+                ["index,follow", "noindex,follow", "noindex,nofollow"].includes(
+                  seo.robots,
+                )
+                  ? seo.robots
+                  : "index,follow"
+              }
               onChange={(e) => setSeo({ ...seo, robots: e.target.value })}
               className={inputClass}
-            />
+            >
+              <option value="index,follow" className="bg-pr_dg">
+                index, follow (default — visible to search engines)
+              </option>
+              <option value="noindex,follow" className="bg-pr_dg">
+                noindex, follow (don&apos;t index, follow links)
+              </option>
+              <option value="noindex,nofollow" className="bg-pr_dg">
+                noindex, nofollow (hide from search engines)
+              </option>
+            </select>
           </div>
           <div>
             <label className="text-xs text-pr_w/60">

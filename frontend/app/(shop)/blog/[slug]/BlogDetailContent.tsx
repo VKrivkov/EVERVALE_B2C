@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   fetchPublicBlog,
@@ -65,23 +65,6 @@ function ContentBlock({ block }: { block: PublicBlogBlock }) {
   return null;
 }
 
-function extractHeadings(content: PublicBlogBlock[] | undefined) {
-  const headings: string[] = [];
-  if (!content) return headings;
-  for (const block of content) {
-    if (block.type === "text" || block.type === "text_image") {
-      const matches = block.body.match(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi);
-      if (matches) {
-        for (const m of matches) {
-          const text = m.replace(/<[^>]*>/g, "").trim();
-          if (text) headings.push(text);
-        }
-      }
-    }
-  }
-  return headings;
-}
-
 export default function BlogDetailContent({ slug }: { slug: string }) {
   const [post, setPost] = useState<PublicBlogDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,8 +103,6 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
       active = false;
     };
   }, [slug]);
-
-  const headings = useMemo(() => extractHeadings(post?.content), [post]);
 
   if (loading) {
     return (
@@ -166,10 +147,10 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
           {post.title}
         </h1>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_0.8fr]">
-          <div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_0.8fr] lg:items-start">
+          <div className="overflow-hidden rounded-3xl bg-pr_w text-pr_dg">
             <div
-              className="h-[280px] w-full rounded-2xl bg-sr_dg sm:h-[360px]"
+              className="h-[280px] w-full bg-sr_dg sm:h-[360px]"
               style={
                 post.mainImage?.url
                   ? {
@@ -180,7 +161,7 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
                   : undefined
               }
             />
-            <div className="mt-6 rounded-2xl bg-pr_w p-6 text-pr_dg">
+            <div className="px-6 py-6 sm:px-8 sm:py-8">
               {post.content && post.content.length > 0 ? (
                 post.content.map((block, index) => (
                   <ContentBlock key={index} block={block} />
@@ -193,48 +174,35 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="rounded-2xl bg-pr_w p-5 text-pr_dg">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {publishedAt ? (
-                  <div>
-                    <p className="text-pr_dg/60">Publication Date</p>
-                    <p className="font-semibold">{publishedAt}</p>
-                  </div>
-                ) : null}
-                {categoryName ? (
-                  <div>
-                    <p className="text-pr_dg/60">Category</p>
-                    <p className="font-semibold">{categoryName}</p>
-                  </div>
-                ) : null}
-                {readingTime ? (
-                  <div>
-                    <p className="text-pr_dg/60">Reading Time</p>
-                    <p className="font-semibold">{readingTime}</p>
-                  </div>
-                ) : null}
+          <div className="rounded-3xl bg-pr_w p-6 text-pr_dg sm:p-7">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm">
+              <div>
+                <p className="text-pr_dg/60">Category</p>
+                <p className="font-semibold">{categoryName || "—"}</p>
+              </div>
+              <div>
+                <p className="text-pr_dg/60">Reading Time</p>
+                <p className="font-semibold">{readingTime || "—"}</p>
+              </div>
+              <div>
+                <p className="text-pr_dg/60">Public Time</p>
+                <p className="font-semibold">{publishedAt || "—"}</p>
+              </div>
+              <div>
+                <p className="text-pr_dg/60">Author</p>
+                <p className="font-semibold">Evervale</p>
               </div>
             </div>
-
-            {headings.length > 0 ? (
-              <div className="rounded-2xl bg-pr_w p-5 text-pr_dg">
-                {headings.map((heading, idx) => (
-                  <p
-                    key={`${heading}-${idx}`}
-                    className="border-b border-pr_dg/10 py-3 text-sm font-semibold last:border-none"
-                  >
-                    {heading}
-                  </p>
-                ))}
-              </div>
-            ) : null}
           </div>
         </div>
 
-        {similar.length > 0 ? (
-          <div className="mt-16">
-            <h2 className="text-2xl font-semibold">Similar Articles</h2>
+        <div className="mt-16">
+          <h2 className="text-2xl font-semibold">Other Articles</h2>
+          {similar.length === 0 ? (
+            <p className="mt-4 text-sm text-pr_w/60">
+              More articles are coming soon.
+            </p>
+          ) : (
             <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {similar.map((item) => (
                 <Link
@@ -273,8 +241,8 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
                 </Link>
               ))}
             </div>
-          </div>
-        ) : null}
+          )}
+        </div>
       </section>
     </div>
   );
