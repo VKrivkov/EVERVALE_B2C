@@ -13,5 +13,5 @@
 # the requested path, so build-time-known slugs still serve their own HTML.
 [[redirects]]
   from = "/blog/*"
-  to = "/blog/post/index.html"
+  to = "/blog/post.html"
   status = 200
