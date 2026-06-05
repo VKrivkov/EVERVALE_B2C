@@ -10,6 +10,26 @@ export type ProductCategory = {
   slug?: string;
 };
 
+export type ProductSeoMetadata = {
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  robots?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+};
+
+export const EMPTY_PRODUCT_SEO: ProductSeoMetadata = {
+  title: "",
+  description: "",
+  keywords: [],
+  robots: "index,follow",
+  ogTitle: "",
+  ogDescription: "",
+};
+
 export type ProductPack = {
   id: string;
   name: string;
@@ -50,6 +70,7 @@ export type ProductListItem = {
   ratingAvg?: number;
   reviewCount?: number;
   filters?: Record<string, string>;
+  seoMetadata?: ProductSeoMetadata;
   createdAt?: string;
   updatedAt?: string;
 };

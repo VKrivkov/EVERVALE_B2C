@@ -14,6 +14,7 @@ import {
   type ProductDetails,
 } from "@/services/products";
 import ProductGallery from "@/components/seeds/ProductGallery";
+import { useDocumentSeo } from "@/lib/seo/useDocumentSeo";
 
 const FALLBACK_FLAVOR = "Sweet · Fruity · Light Earthy";
 
@@ -204,6 +205,25 @@ export default function SeedDetailContent({ slug }: { slug: string }) {
       active = false;
     };
   }, [slug]);
+
+  useDocumentSeo(
+    product
+      ? {
+          title: product.seoMetadata?.title || product.name,
+          description:
+            product.seoMetadata?.description || product.content?.subtitle,
+          keywords: product.seoMetadata?.keywords,
+          robots: product.seoMetadata?.robots,
+          ogTitle: product.seoMetadata?.ogTitle,
+          ogDescription: product.seoMetadata?.ogDescription,
+          ogImage:
+            product.seoMetadata?.ogImage || product.images?.[0]?.url,
+          canonicalUrl:
+            product.seoMetadata?.canonicalUrl ||
+            (product.slug ? `/products/${product.slug}` : undefined),
+        }
+      : null,
+  );
 
   if (loading) {
     return (

@@ -11,6 +11,7 @@ import {
   type PublicBlogDetail,
   type PublicBlogListItem,
 } from "@/services/blog";
+import { useDocumentSeo } from "@/lib/seo/useDocumentSeo";
 
 function renderHtml(body: string) {
   return { __html: body };
@@ -103,6 +104,22 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
       active = false;
     };
   }, [slug]);
+
+  useDocumentSeo(
+    post
+      ? {
+          title: post.seoMetadata?.title || post.title,
+          description: post.seoMetadata?.description || post.excerpt,
+          keywords: post.seoMetadata?.keywords,
+          robots: post.seoMetadata?.robots,
+          ogTitle: post.seoMetadata?.ogTitle,
+          ogDescription: post.seoMetadata?.ogDescription,
+          ogImage: post.seoMetadata?.ogImage || post.mainImage?.url,
+          canonicalUrl:
+            post.seoMetadata?.canonicalUrl || `/blogs/${post.slug}`,
+        }
+      : null,
+  );
 
   if (loading) {
     return (

@@ -46,6 +46,7 @@ export default function AdminBlogEditPage() {
   const [excerpt, setExcerpt] = useState("");
   const [readTime, setReadTime] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState("");
   const [mainImageId, setMainImageId] = useState<string | null>(null);
   const [content, setContent] = useState<BlogContentBlock[]>([]);
@@ -58,6 +59,7 @@ export default function AdminBlogEditPage() {
     setExcerpt(b.excerpt ?? "");
     setReadTime(b.readTime ?? 0);
     setIsActive(Boolean(b.isActive));
+    setPublishedAt(b.publishedAt ?? null);
     setCategoryId(b.category?.id ?? b.categoryId ?? "");
     setMainImageId(b.mainImageId ?? b.mainImage?.id ?? null);
     setContent(Array.isArray(b.content) ? b.content : []);
@@ -104,6 +106,24 @@ export default function AdminBlogEditPage() {
     loadAll();
   }, [id]);
 
+  const handlePublishNow = async () => {
+    if (!id) return;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await updateAdminBlog(id, { publish: true });
+      const fresh = await fetchAdminBlog(id);
+      hydrate(fresh);
+      setSuccess("Published.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!id) return;
     setSaving(true);
@@ -132,7 +152,7 @@ export default function AdminBlogEditPage() {
         readTime: Number.isFinite(readTime)
           ? Math.max(0, Math.trunc(readTime))
           : 0,
-        isActive,
+        publish: isActive,
         mainImageId: mainImageId ?? null,
         content: sanitizedContent,
         seoMetadata: {
@@ -294,26 +314,29 @@ export default function AdminBlogEditPage() {
       {error ? <p className="mt-4 text-sm text-pr_dr">{error}</p> : null}
       {success ? <p className="mt-4 text-sm text-green-400">{success}</p> : null}
 
-      {!isActive ? (
+      {!publishedAt ? (
         <div className="mt-4 flex flex-col gap-2 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Draft — this blog is <b>not</b> visible on the public site yet.
+            Draft — never published. Click <b>Publish now</b> to make this blog
+            visible on the public site.
           </span>
           <button
             type="button"
-            onClick={async () => {
-              setIsActive(true);
-              setTimeout(() => handleSave(), 0);
-            }}
+            onClick={handlePublishNow}
             disabled={saving}
             className="rounded-full bg-pr_lg px-4 py-1.5 text-xs font-semibold text-pr_dg disabled:opacity-60"
           >
-            Publish now
+            {saving ? "Publishing…" : "Publish now"}
           </button>
         </div>
-      ) : (
+      ) : isActive ? (
         <div className="mt-4 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs text-green-300">
           Active — visible on /blog
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-pr_w/15 bg-pr_w/5 px-4 py-2 text-xs text-pr_w/70">
+          Inactive — hidden from /blog (previously published on{" "}
+          {new Date(publishedAt).toLocaleString()})
         </div>
       )}
 
@@ -370,17 +393,19 @@ export default function AdminBlogEditPage() {
               className={inputClass}
             />
           </div>
-          <div className="md:col-span-2 flex items-center gap-2">
-            <input
-              id="isActive"
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-            />
-            <label htmlFor="isActive" className="text-sm">
-              Active (published)
-            </label>
-          </div>
+          {publishedAt ? (
+            <div className="md:col-span-2 flex items-center gap-2">
+              <input
+                id="isActive"
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
+              <label htmlFor="isActive" className="text-sm">
+                Active (visible on /blog)
+              </label>
+            </div>
+          ) : null}
         </div>
       </section>
 

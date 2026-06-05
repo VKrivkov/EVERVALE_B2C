@@ -31,6 +31,24 @@ function buildAdminErrorMessage(
   return details ? `${base} (${details})` : base;
 }
 
+export type AdminProductSeoMetadata = {
+  title: string;
+  description: string;
+  keywords: string[];
+  robots: string;
+  ogTitle: string;
+  ogDescription: string;
+};
+
+export const EMPTY_PRODUCT_SEO: AdminProductSeoMetadata = {
+  title: "",
+  description: "",
+  keywords: [],
+  robots: "index,follow",
+  ogTitle: "",
+  ogDescription: "",
+};
+
 export type AdminProduct = {
   id: string;
   name: string;
@@ -40,6 +58,7 @@ export type AdminProduct = {
   currency: string;
   stockQty: number;
   isActive: boolean;
+  seoMetadata?: AdminProductSeoMetadata;
   createdAt: string;
   updatedAt: string;
   content?: {

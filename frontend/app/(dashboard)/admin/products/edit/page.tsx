@@ -15,6 +15,8 @@ import {
   deleteProductFilterValue,
   AdminProduct,
   AdminFilterValue,
+  EMPTY_PRODUCT_SEO,
+  type AdminProductSeoMetadata,
 } from "@/services/admin";
 import { fetchCategoryFilters, CategoryFilter } from "@/services/categories";
 import { formatPrice } from "@/services/products";
@@ -65,6 +67,7 @@ export default function AdminProductEditPage() {
   const [subtitle, setSubtitle] = useState("");
   const [genBalance, setGenBalance] = useState("");
   const [effectsText, setEffectsText] = useState("");
+  const [seo, setSeo] = useState<AdminProductSeoMetadata>(EMPTY_PRODUCT_SEO);
 
   const [packs, setPacks] = useState<PackDraft[]>([]);
   const [packBusyId, setPackBusyId] = useState<string | null>(null);
@@ -99,6 +102,15 @@ export default function AdminProductEditPage() {
     setSubtitle(p.subtitle ?? p.content?.subtitle ?? "");
     setGenBalance(p.content?.gen_balance_desk ?? "");
     setEffectsText((p.content?.effects ?? []).join(", "));
+    const seoRaw = (p.seoMetadata ?? {}) as Partial<AdminProductSeoMetadata>;
+    setSeo({
+      title: seoRaw.title ?? "",
+      description: seoRaw.description ?? "",
+      keywords: Array.isArray(seoRaw.keywords) ? seoRaw.keywords : [],
+      robots: seoRaw.robots ?? "index,follow",
+      ogTitle: seoRaw.ogTitle ?? "",
+      ogDescription: seoRaw.ogDescription ?? "",
+    });
     setPacks(
       (p.packs ?? []).map((pack) => ({
         id: pack.id,
@@ -165,6 +177,14 @@ export default function AdminProductEditPage() {
           description: description.trim(),
           gen_balance_desk: genBalance,
           effects,
+        },
+        seoMetadata: {
+          title: seo.title,
+          description: seo.description,
+          keywords: seo.keywords,
+          robots: seo.robots || "index,follow",
+          ogTitle: seo.ogTitle,
+          ogDescription: seo.ogDescription,
         },
       });
       const fresh = await reload();
@@ -751,6 +771,97 @@ export default function AdminProductEditPage() {
         onDelete={handleDeleteFilterValue}
         smallInputClass={smallInputClass}
       />
+
+      <section className="mt-10 border-t border-pr_w/10 pt-6">
+        <h2 className="text-sm font-semibold text-pr_w/80">SEO</h2>
+        <p className="mt-1 text-[11px] text-pr_w/40">
+          All 6 fields are always sent on save. canonicalUrl/ogImage are
+          derived server-side.
+        </p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="text-xs text-pr_w/60">SEO title</label>
+            <input
+              type="text"
+              value={seo.title}
+              onChange={(e) => setSeo({ ...seo, title: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/60">SEO description</label>
+            <input
+              type="text"
+              value={seo.description}
+              onChange={(e) => setSeo({ ...seo, description: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/60">OG title</label>
+            <input
+              type="text"
+              value={seo.ogTitle}
+              onChange={(e) => setSeo({ ...seo, ogTitle: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/60">OG description</label>
+            <input
+              type="text"
+              value={seo.ogDescription}
+              onChange={(e) =>
+                setSeo({ ...seo, ogDescription: e.target.value })
+              }
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/60">Robots</label>
+            <select
+              value={
+                ["index,follow", "noindex,follow", "noindex,nofollow"].includes(
+                  seo.robots,
+                )
+                  ? seo.robots
+                  : "index,follow"
+              }
+              onChange={(e) => setSeo({ ...seo, robots: e.target.value })}
+              className={inputClass}
+            >
+              <option value="index,follow" className="bg-pr_dg">
+                index, follow (default — visible to search engines)
+              </option>
+              <option value="noindex,follow" className="bg-pr_dg">
+                noindex, follow (don&apos;t index, follow links)
+              </option>
+              <option value="noindex,nofollow" className="bg-pr_dg">
+                noindex, nofollow (hide from search engines)
+              </option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-pr_w/60">
+              Keywords (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={(seo.keywords ?? []).join(", ")}
+              onChange={(e) =>
+                setSeo({
+                  ...seo,
+                  keywords: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
+              }
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </section>
 
       <div className="mt-10 flex flex-wrap items-center gap-6 border-t border-pr_w/10 pt-6">
         <div className="flex items-center gap-3">
