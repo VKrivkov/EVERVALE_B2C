@@ -115,8 +115,7 @@ export default function BlogDetailContent({ slug }: { slug: string }) {
           ogTitle: post.seoMetadata?.ogTitle,
           ogDescription: post.seoMetadata?.ogDescription,
           ogImage: post.seoMetadata?.ogImage || post.mainImage?.url,
-          canonicalUrl:
-            post.seoMetadata?.canonicalUrl || `/blogs/${post.slug}`,
+          canonicalUrl: `/blog/${post.slug}`,
         }
       : null,
   );

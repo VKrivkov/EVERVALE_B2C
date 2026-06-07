@@ -218,9 +218,7 @@ export default function SeedDetailContent({ slug }: { slug: string }) {
           ogDescription: product.seoMetadata?.ogDescription,
           ogImage:
             product.seoMetadata?.ogImage || product.images?.[0]?.url,
-          canonicalUrl:
-            product.seoMetadata?.canonicalUrl ||
-            (product.slug ? `/products/${product.slug}` : undefined),
+          canonicalUrl: product.slug ? `/seeds/${product.slug}` : undefined,
         }
       : null,
   );
