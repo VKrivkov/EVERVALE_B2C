@@ -44,7 +44,7 @@ const footerColumns = [
   {
     title: "SUPPORT",
     links: [
-      { label: "Help/FAQ", href: "/" },
+      { label: "Help/FAQ", href: "mailto:support@evervale.org" },
     ],
   },
   {
