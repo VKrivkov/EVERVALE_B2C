@@ -101,7 +101,6 @@ export default function ProductCard({
                 )}
               />
 
-              {/* Animate wrapper only */}
               <div
                 className={cn(
                   "absolute inset-x-3 bottom-3 origin-bottom transform-gpu",
@@ -113,8 +112,15 @@ export default function ProductCard({
                   "will-change-transform",
                 )}
               >
-                {/* Keep expensive backdrop blur on a non-animated child */}
-                <div className="rounded-xl border border-white/20 bg-pr_dg/65 p-3 backdrop-blur-sm">
+                <div
+                  className={cn(
+                    "rounded-xl border border-white/20 bg-pr_dg/65 p-3",
+                    "backdrop-blur-0 transition-[backdrop-filter,-webkit-backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    "will-change-[backdrop-filter]",
+                    !isTouchDevice && "group-hover:backdrop-blur-sm",
+                    isPreviewOpen && "backdrop-blur-sm",
+                  )}
+                >
                   <div className="flex flex-col gap-1">
                     {hoverInfo!.map((item, index) => (
                       <div

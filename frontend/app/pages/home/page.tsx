@@ -5,6 +5,7 @@ import BestByMetricsProducts from "@/components/sections/products/BestByMetricsP
 import WhyChooseUs from "@/components/sections/why-choose-us/WhyChooseUs";
 import ProofScale from "@/components/sections/proof-scale/ProofScale";
 import Blog from "@/components/sections/blog/Blog";
+import { BLOG_ENABLED } from "@/lib/featureFlags";
 
 export default function HomePage() {
   return (
@@ -21,7 +22,7 @@ export default function HomePage() {
       <BestByMetricsProducts />
       <WhyChooseUs />
       <ProofScale />
-      <Blog />
+      {BLOG_ENABLED ? <Blog /> : null}
     </div>
   );
 }

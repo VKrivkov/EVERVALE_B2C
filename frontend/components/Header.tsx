@@ -8,13 +8,16 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { usePathname } from "next/navigation";
+import { BLOG_ENABLED } from "@/lib/featureFlags";
 
 const BUSINESS_URL = "https://b2b.evervale.org/";
 
 const tabs: SectionTab[] = [
   { id: "home", label: "Home", href: "/" },
   { id: "seeds", label: "Seeds", href: "/products" },
-  { id: "blog", label: "Blog", href: "/blog" },
+  ...(BLOG_ENABLED
+    ? [{ id: "blog", label: "Blog", href: "/blog" } as SectionTab]
+    : []),
   {
     id: "business",
     label: "For Business",

@@ -31,7 +31,18 @@ export default function FooterColumn({
         {links.map((link) => (
           <li key={`${title}-${link.label}`}>
             {isExternal(link.href) ? (
-              <a href={link.href} className={linkClass}>
+              <a
+                href={link.href}
+                className={linkClass}
+                target={
+                  /^(https?:\/\/)/i.test(link.href) ? "_blank" : undefined
+                }
+                rel={
+                  /^(https?:\/\/)/i.test(link.href)
+                    ? "noopener noreferrer"
+                    : undefined
+                }
+              >
                 {link.label}
               </a>
             ) : (
